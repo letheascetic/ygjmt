@@ -11,3 +11,20 @@ LOG_CONFIG = {
     'LOG_FORMAT': logging.Formatter('[%(levelname)s][%(asctime)s][%(module)s][%(funcName)s][%(process)d][%(thread)d][%(message)s]')
 }
 
+
+ON_SALE_REMINDER_CONFIG = {
+    'interval': 1,
+    'worker_num': 8,
+    'goods_user_file': '北京日上补货订阅0712.xlsx',
+    'user_status_file': 'goods_status.txt',
+    'mail_senders': [
+        {"email": '', 'code': ''},
+        {"email": '', 'code': ''}
+    ]
+}
+
+
+AUTO_ORDER_REMINDER_CONFIG = {
+    "interval": 1,
+    "thread": 8
+}

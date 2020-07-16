@@ -65,6 +65,18 @@ def load_goods_user_info(filename):
     return goods_user_dict
 
 
+def load_goods_user_info_v2(filename):
+    goods_user_info = load_goods_user_info(filename)
+    user_info_dict = {}
+    for goods_id, users in goods_user_info.items():
+        for user in users:
+            if user not in user_info_dict.keys():
+                user_info_dict[user]['email'] = user
+                user_info_dict[user]['password'] = None
+            user_info_dict[user]['goods'][goods_id] = 1
+    return goods_user_info, user_info_dict
+
+
 def load_lock_goods_user_info(filename):
     goods_user_info = {
         '2c9194587219d0ae017219dc973a08e0': ['15850563761', '15850563806'],
