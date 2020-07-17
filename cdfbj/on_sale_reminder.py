@@ -143,9 +143,9 @@ class OnSaleReminder(object):
 
     def execute(self):
         self.load_goods_user_info()     # 从excel读取用户信息和产品订阅信息
-        # self.load_user_status()       # 读取过去存储的用户字典
-        # self.activate_workers()       # 激活workers，开始监控
-        # self.start_to_monitor()
+        self.load_user_status()       # 读取过去存储的用户字典
+        self.activate_workers()       # 激活workers，开始监控
+        self.start_to_monitor()
         pass
 
 
