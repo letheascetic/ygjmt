@@ -140,7 +140,7 @@ class Worker(threading.Thread):
                     if goods_info['status'] is None:  # 访问失败或出错，直接返回
                         continue
 
-                    logger.info('goods info: [{0}].'.format(goods_info))
+                    # logger.info('goods info: [{0}].'.format(goods_info))
 
                     if goods_info['status'] == '在售':
                         logger.info('goods on sale: [{0}].'.format(goods_info))
@@ -156,7 +156,7 @@ class Worker(threading.Thread):
                     if update_flag:
                         self.message_queue.add('user_status_dict')
 
-                    time.sleep(random.random() * 5)
+                    time.sleep(random.random())
                 except Exception as e:
                     logger.exception('process goods[{0}] exception: [{1}].'.format(goods_id, e))
 
