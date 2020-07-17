@@ -15,10 +15,12 @@ LOG_CONFIG = {
 ON_SALE_REMINDER_CONFIG = {
     'interval': 3,
     'worker_num': 4,
-    'goods_user_file': '北京日上补货订阅0716.xlsx',
+    'goods_user_file': '北京日上订阅1群0717.xlsx',
     'user_status_file': 'user_status.txt',
     'mail_senders': [
-        {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},
+        {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},        # cdfbj_vx1
+        #{"email": 'cdf_bj_updater_2@163.com', 'code': 'FZGDKEQHCXFKUYQU'},	    # cdfbj_vx2
+        #{"email": 'cdf_bj_updater_3@163.com', 'code': 'OAJFKDISCBDVRGJE'},	    # cdfbj
     ]
 }
 
