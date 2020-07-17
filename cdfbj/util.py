@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def config_logger(prefix=None):
     root_logger = logging.getLogger()           # get root logger
-    root_logger.setLevel(logging.DEBUG)         # set root logger level
+    root_logger.setLevel(logging.DEBUG)          # set root logger level
 
     log_config = LOG_CONFIG
     log_dir = log_config.get('LOG_DIR', 'log/')

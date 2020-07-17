@@ -41,12 +41,12 @@ def load_goods_user_info(filename):
                 logger.exception('parse[{0}] url[{1}] exception: [{2}].'.format(email, url, e))
         content[email] = goods_ids
 
-    logger.info('---------------------------------------------------------------------------------')
-    i = 0
-    for email in content.keys():
-        i = i + 1
-        logger.info('[{0}] [{1}]: [{2}].'.format(i, email, content[email]))
-    logger.info('---------------------------------------------------------------------------------')
+    # logger.debug('---------------------------------------------------------------------------------')
+    # i = 0
+    # for email in content.keys():
+    #     i = i + 1
+    #     logger.debug('[{0}] [{1}]: [{2}].'.format(i, email, content[email]))
+    # logger.debug('---------------------------------------------------------------------------------')
 
     goods_user_dict = {}
     for user, goods_ids in content.items():
@@ -55,12 +55,12 @@ def load_goods_user_info(filename):
                 goods_user_dict[goods_id] = set()
             goods_user_dict[goods_id].add(user)
 
-    logger.info('---------------------------------------------------------------------------------')
-    i = 0
-    for goods_id in goods_user_dict.keys():
-        i = i + 1
-        logger.info('[{0}] [{1}]: [{2}].'.format(i, goods_id, goods_user_dict[goods_id]))
-    logger.info('---------------------------------------------------------------------------------')
+    # logger.debug('---------------------------------------------------------------------------------')
+    # i = 0
+    # for goods_id in goods_user_dict.keys():
+    #     i = i + 1
+    #     logger.debug('[{0}] [{1}]: [{2}].'.format(i, goods_id, goods_user_dict[goods_id]))
+    # logger.debug('---------------------------------------------------------------------------------')
 
     return goods_user_dict
 
@@ -71,9 +71,17 @@ def load_goods_user_info_v2(filename):
     for goods_id, users in goods_user_info.items():
         for user in users:
             if user not in user_info_dict.keys():
+                user_info_dict[user] = {}
                 user_info_dict[user]['email'] = user
                 user_info_dict[user]['password'] = None
+                user_info_dict[user]['goods'] = {}
             user_info_dict[user]['goods'][goods_id] = 1
+    logger.info('goods user info: ----------------------------------------------------------------')
+    logger.info(goods_user_info)
+    logger.info('---------------------------------------------------------------------------------')
+    logger.info('user info dict: ------------------------------------------------------------------')
+    logger.info(user_info_dict)
+    logger.info('---------------------------------------------------------------------------------')
     return goods_user_info, user_info_dict
 
 
