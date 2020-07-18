@@ -14,8 +14,8 @@ LOG_CONFIG = {
 
 ON_SALE_REMINDER_CONFIG = {
     'interval': 3,
-    'worker_num': 1,
-    'ip_pool_num': 1,
+    'worker_num': 6,
+    'ip_pool_num': 5,
     'goods_user_file': '北京日上补货订阅0717.xlsx',
     'user_status_file': 'user_status.txt',
     'mail_senders': [

@@ -20,22 +20,16 @@ logger = logging.getLogger(__name__)
 
 class Worker(threading.Thread):
 
-    m_running = True
-    id = None
-    goods_user_info = None
-    user_info_dict = None
-    user_status_dict = None
-    message_queue = None
-    ip_pool = None
-
     def __init__(self, id, message_queue, goods_user_info, user_info_dict, user_status_dict, ip_pool):
         threading.Thread.__init__(self)
         self.id = id
+        self.m_running = True
         self.goods_user_info = goods_user_info
         self.user_info_dict = user_info_dict
         self.user_status_dict = user_status_dict
         self.message_queue = message_queue
         self.ip_pool = ip_pool
+        self.request_statistics = {'total': 0, 'success': 0, 'failed': 0, 'exception': 0, 'total_time_span': 0, 'success_time_span': 0, 'total_avg_time': 0, 'success_avg_time': 0}
 
     def get_proxy(self, ip_info):
         host = ip_info.get('ip', None)
@@ -56,13 +50,14 @@ class Worker(threading.Thread):
         ip_info = random.choice(self.ip_pool)
         proxies = self.get_proxy(ip_info)
 
+        start = time.time()
         try:
             url = "https://mbff.yuegowu.com/goods/unLogin/spu/{0}?regId={1}".format(goods_id, uuid.uuid4())
             header = {'Host': 'mbff.yuegowu.com', 'Referer': 'https://m.yuegowu.com/goods-detail/{0}'.format(goods_id),
                       'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_2_6 like Mac OS X) AppleWebKit/604.5.6 (KHTML, like Gecko) Mobile/15D100 MicroMessenger/7.0.13(0x17000d2a) NetType/WIFI Language/zh_CN',
                       'Content-Type': 'application/json'}
 
-            r = requests.get(url, timeout=10, headers=header, proxies=proxies)
+            r = requests.get(url, timeout=5, headers=header, proxies=proxies)
 
             goods_info['url'] = header['Referer']
 
@@ -84,13 +79,28 @@ class Worker(threading.Thread):
                 if ip_info['failed_times'] != 0:
                     ip_info['failed_times'] = ip_info['failed_times'] - 1
 
+                self.request_statistics['success'] = self.request_statistics['success'] + 1
+                time_span = time.time() - start
+                self.request_statistics['success_time_span'] = self.request_statistics['success_time_span'] + time_span
+                self.request_statistics['success_avg_time'] = self.request_statistics['success_time_span'] / self.request_statistics['success']
+
             else:
                 logger.info('thread[{0}] request url[{1}] using proxy[{2}] failed with return code: [{3}].'.format(self.id, url, proxies, r.status_code))
                 ip_info['failed_times'] = ip_info['failed_times'] + 1
 
+                self.request_statistics['failed'] = self.request_statistics['failed'] + 1
+                time_span = time.time() - start
+
         except Exception as e:
             logger.info('thread[{0}] get goods info[{1}] using proxy[{2}] exception.'.format(self.id, goods_id, proxies))
             ip_info['failed_times'] = ip_info['failed_times'] + 1
+
+            self.request_statistics['exception'] = self.request_statistics['exception'] + 1
+            time_span = time.time() - start
+
+        self.request_statistics['total'] = self.request_statistics['total'] + 1
+        self.request_statistics['total_time_span'] = self.request_statistics['total_time_span'] + time_span
+        self.request_statistics['total_avg_time'] = self.request_statistics['total_time_span'] / self.request_statistics['total']
 
         return goods_info
 
@@ -240,6 +250,8 @@ class Worker(threading.Thread):
                     # time.sleep(random.random())
                 except Exception as e:
                     logger.exception('process goods[{0}] exception: [{1}].'.format(goods_id, e))
+
+            logger.info('thread[{0}] request statistics: [{1}].'.format(self.id, self.request_statistics))
 
     def stop(self):
         self.m_running = False
