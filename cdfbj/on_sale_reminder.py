@@ -5,6 +5,8 @@ import json
 import time
 import reader
 import logging
+import datetime
+import requests
 from on_sale_remind_worker import Worker
 
 
@@ -20,6 +22,8 @@ class OnSaleReminder(object):
     user_status_dict = None     # 用户状态字典，记录用户订阅的产品是否已经发起过提醒
     # goods_status_dict = None    # 产品状态字典，记录产品最近的状态信息，包括产品名、链接、状态、库存
     workers = []
+    ip_pool = []
+    ip_pool_statistics = {'used': 0, 'expired': 0, 'bad': 0}
 
     def __init__(self, config):
         self.config = config
@@ -118,33 +122,72 @@ class OnSaleReminder(object):
                 continue
             elif goods_count == goods_per_thread:
                 self.workers.append(Worker(thread_id, self.message_queue, goods_user_info_slice,
-                                           self.user_info_dict, self.user_status_dict))
+                                           self.user_info_dict, self.user_status_dict, self.ip_pool))
                 goods_count = 0
                 thread_id = thread_id + 1
                 goods_user_info_slice = {}
 
         self.workers.append(Worker(thread_id, self.message_queue, goods_user_info_slice,
-                                   self.user_info_dict, self.user_status_dict))
+                                   self.user_info_dict, self.user_status_dict, self.ip_pool))
 
         for worker in self.workers:
             # logger.info('[{0}] [{1}].'.format(worker.id, len(worker.goods_user_info.keys())))
             worker.start()
 
+    def update_proxies(self, num):
+        for ip_info in self.ip_pool:
+            expire_time = datetime.datetime.strptime(ip_info['expire_time'], '%Y-%m-%d %H:%M:%S')
+            time_rest = (expire_time - datetime.datetime.now()).total_seconds()
+            if time_rest < 60:
+                logger.info('pop time expired proxy: [{0}].'.format(ip_info))
+                self.ip_pool.remove(ip_info)
+                self.ip_pool_statistics['expired'] = self.ip_pool_statistics['expired'] + 1
+                self.ip_pool_statistics['used'] = self.ip_pool_statistics['used'] + 1
+            if ip_info.get('failed_times', 0) > 10:
+                logger.info('pop bad proxy: [{0}].'.format(ip_info))
+                self.ip_pool.remove(ip_info)
+                self.ip_pool_statistics['bad'] = self.ip_pool_statistics['bad'] + 1
+                self.ip_pool_statistics['used'] = self.ip_pool_statistics['used'] + 1
+
+        new_num = num - len(self.ip_pool)
+        if new_num <= 0:
+            return
+
+        url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city=0&yys=0&port=11&pack=110082&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions=&gm=4'
+        url = url.format(new_num)
+
+        try:
+            r = requests.get(url, timeout=30)
+            if r.status_code == requests.codes.ok:
+                content = json.loads(r.text)
+                if content['code'] == 0:
+                    logger.info('get proxies success.')
+                    for ip_info in content.get('data', []):
+                        ip_info['failed_times'] = 0
+                        logger.info('push new proxy: [{0}].'.format(ip_info))
+                        self.ip_pool.append(ip_info)
+        except Exception as e:
+            logger.exception('get proxies exception: [{0}].'.format(e))
+
     def start_to_monitor(self):
+        proxy_num = self.config.get('ip_pool_num', 5)
         while True:
             try:
                 while len(self.message_queue) != 0:
                     message = self.message_queue.pop()
                     if message == 'user_status_dict':
                         self.save_user_status()
+                self.update_proxies(proxy_num)
                 time.sleep(10)
             except Exception as e:
                 logger.exception('on sale reminder exception: [{0}].'.format(e))
 
     def execute(self):
         self.load_goods_user_info()     # 从excel读取用户信息和产品订阅信息
-        self.load_user_status()       # 读取过去存储的用户字典
-        self.activate_workers()       # 激活workers，开始监控
+        self.load_user_status()         # 读取过去存储的用户字典
+        proxy_num = self.config.get('ip_pool_num', 5)
+        self.update_proxies(proxy_num)
+        self.activate_workers()         # 激活workers，开始监控
         self.start_to_monitor()
         pass
 
