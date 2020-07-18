@@ -227,12 +227,12 @@ class Worker(threading.Thread):
                             for user in mail_users:
                                 self.user_status_dict[user][goods_id] = True
 
-                    for user in mail_users:
-                        logger.info('goods[{0}] send mail to [{1}].'.format(goods_info, self.user_info_dict[user]))
-                        if self.send_mail(goods_info, user):  # 发送成功，用户状态字典中对应的状态变为True
-                            self.user_status_dict[user][goods_id] = True
-                        # else:
-                        #     logger.info('failed goods[{0}] send mail to [{1}].'.format(goods_info, self.user_info_dict[user]))
+                    # for user in mail_users:
+                    #     logger.info('goods[{0}] send mail to [{1}].'.format(goods_info, self.user_info_dict[user]))
+                    #     if self.send_mail(goods_info, user):  # 发送成功，用户状态字典中对应的状态变为True
+                    #         self.user_status_dict[user][goods_id] = True
+                    #     else:
+                    #         logger.info('failed goods[{0}] send mail to [{1}].'.format(goods_info, self.user_info_dict[user]))
 
                     if update_flag:
                         self.message_queue.add('user_status_dict')
