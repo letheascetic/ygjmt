@@ -89,7 +89,7 @@ class Worker(threading.Thread):
                 ip_info['failed_times'] = ip_info['failed_times'] + 1
 
         except Exception as e:
-            logger.exception('thread[{0}] get goods info[{1}] using proxy[{2}] failed: [{3}].'.format(self.id, goods_id, proxies, e))
+            logger.info('thread[{0}] get goods info[{1}] using proxy[{2}] exception.'.format(self.id, goods_id, proxies))
             ip_info['failed_times'] = ip_info['failed_times'] + 1
 
         return goods_info
