@@ -143,7 +143,7 @@ class OnSaleReminder(object):
                 self.ip_pool.remove(ip_info)
                 self.ip_pool_statistics['expired'] = self.ip_pool_statistics['expired'] + 1
                 self.ip_pool_statistics['used'] = self.ip_pool_statistics['used'] + 1
-            if ip_info.get('failed_times', 0) > 10:
+            if ip_info.get('failed_times', 0) >= 10:
                 logger.info('pop bad proxy: [{0}].'.format(ip_info))
                 self.ip_pool.remove(ip_info)
                 self.ip_pool_statistics['bad'] = self.ip_pool_statistics['bad'] + 1
@@ -169,8 +169,10 @@ class OnSaleReminder(object):
         except Exception as e:
             logger.exception('get proxies exception: [{0}].'.format(e))
 
+        logger.info('ip pool statistics: [{0}].'.format(self.ip_pool_statistics))
+
     def start_to_monitor(self):
-        proxy_num = self.config.get('ip_pool_num', 5)
+        proxy_num = self.config.get('ip_pool_num', 1)
         while True:
             try:
                 while len(self.message_queue) != 0:

@@ -49,12 +49,12 @@ class Worker(threading.Thread):
     def get_goods_info(self, goods_id):
         goods_info = {'title': None, 'url': None, 'status': None, '库存': None}
 
-        if not self.ip_pool:
-            ip_info = random.choice(self.ip_pool)
-            proxies = self.get_proxy(ip_info)
-        else:
-            ip_info = None
-            proxies = None
+        while len(self.ip_pool) == 0:
+            logger.info('ip pool is empty, waiting.')
+            time.sleep(10)
+
+        ip_info = random.choice(self.ip_pool)
+        proxies = self.get_proxy(ip_info)
 
         try:
             url = "https://mbff.yuegowu.com/goods/unLogin/spu/{0}?regId={1}".format(goods_id, uuid.uuid4())
@@ -62,10 +62,7 @@ class Worker(threading.Thread):
                       'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_2_6 like Mac OS X) AppleWebKit/604.5.6 (KHTML, like Gecko) Mobile/15D100 MicroMessenger/7.0.13(0x17000d2a) NetType/WIFI Language/zh_CN',
                       'Content-Type': 'application/json'}
 
-            if proxies is not None:
-                r = requests.get(url, timeout=10, headers=header, proxies=proxies)
-            else:
-                r = requests.get(url, timeout=10, headers=header)
+            r = requests.get(url, timeout=10, headers=header, proxies=proxies)
 
             goods_info['url'] = header['Referer']
 
@@ -84,30 +81,32 @@ class Worker(threading.Thread):
                     else:
                         goods_info['status'] = '缺货'
 
-                if ip_info is not None and ip_info['failed_times'] != 0:
+                if ip_info['failed_times'] != 0:
                     ip_info['failed_times'] = ip_info['failed_times'] - 1
 
             else:
                 logger.info('thread[{0}] request url[{1}] using proxy[{2}] failed with return code: [{3}].'.format(self.id, url, proxies, r.status_code))
-                if ip_info is not None:
-                    ip_info['failed_times'] = ip_info['failed_times'] + 1
+                ip_info['failed_times'] = ip_info['failed_times'] + 1
 
         except Exception as e:
-            logger.info('thread[{0}] get goods info[{1}] using proxy[{2}] failed: [{3}].'.format(self.id, goods_id, proxies, e))
-            if ip_info is not None:
-                ip_info['failed_times'] = ip_info['failed_times'] + 1
+            logger.exception('thread[{0}] get goods info[{1}] using proxy[{2}] failed: [{3}].'.format(self.id, goods_id, proxies, e))
+            ip_info['failed_times'] = ip_info['failed_times'] + 1
 
         return goods_info
 
     def send_mail(self, info, user):
         goods_title = info['title']
         content = str(info)
+        # content = self.make_mail_content(info, user)
+        # subject = self.make_mail_header(info, user)
+
         user_email = self.user_info_dict[user]['email']
-        # user_email = '1148728402@qq.com'
         to_addrs = [user_email]
 
         sender = random.choice(config.ON_SALE_REMINDER_CONFIG['mail_senders'])
         from_addr, code = sender['email'], sender['code']
+
+        to_addrs = [from_addr]
 
         smtp_server = 'smtp.163.com'      # 固定写死
         smtp_port = 465                   # 固定端口
@@ -120,15 +119,10 @@ class Worker(threading.Thread):
                 stmp.login(from_addr, code)
                 # 组装发送内容
                 message = MIMEText(content, 'plain')  # 发送的内容
-                # message = MIMEText('你好美女.', 'plain')  # 发送的内容
                 message['From'] = formataddr(["阳光姐妹淘鸭", from_addr])
-                # message['From'] = "阳光姐妹淘鸭<{0}>".format(from_addr)
-                # message['To'] = "小姐姐<{0}>".format(user_email)
                 message['To'] = ','.join(to_addrs)        # 收件人
-                # message['To'] = formataddr(["小姐姐", user_email])
                 # message['Cc'] = from_addr
                 subject = '{0}: 库存{1}-{2}'.format('cdf北京', info['库存'], goods_title)
-                # subject = '老婆我爱你。'
                 message['Subject'] = Header(subject)  # 邮件标题
                 stmp.sendmail(from_addr, to_addrs, message.as_string())
                 return True
@@ -137,6 +131,44 @@ class Worker(threading.Thread):
                 logger.exception('thread[{0}] send mail[{1}] to [{2}] failed; [{3}].'.format(self.id, info, user, e))
                 time.sleep(2)
         return False
+
+    def make_mail_content(self, info, user):
+        user_email = self.user_info_dict[user]['email']
+
+        hello = random.choice(['hello', 'hi', '嗨', '你好', '您好', 'hey', '亲爱的', '亲', '哇', '嘿嘿', '哈哈', '恭喜', 'congratulations'])
+        name = user_email.split('@')[0]
+        str1 = random.choice(['商品', '产品', '东东', '', '货品'])
+        str2 = info['title']
+        str3 = random.choice(['有货', '上架', '补货'])
+        str4 = info['库存']
+        str5 = random.choice(['马上', '尽快', '赶紧', '加油', ' ', '请'])
+        str6 = random.choice(['下单', '购买', '支付', '查看'])
+        str7 = random.choice(['商品', '产品', '东东', '宝贝', '货品'])
+        str8 = random.choice(['Best Regards', 'Regards', 'Best wishes'])
+
+        content = """
+        {hello}，{name}：
+
+            你关注的{str1}“{str2}”{str3}了，现在还有{str4}件，{str5}去{str6}吧。
+            
+            {str7}链接：{url}
+        
+        {str8}
+        
+        阳光姐妹淘鸭！~
+        """.format(hello=hello, name=name, str1=str1, str2=str2, str3=str3,
+                   str4=str4, str5=str5, str6=str6, str7=str7, url=info['url'], str8=str8)
+
+        return content
+
+    def make_mail_header(self, info, user):
+        user_email = self.user_info_dict[user]['email']
+        name = random.choice(['hello', 'hi', '嗨', '你好', '您好', 'hey', '亲爱的', '亲', '哇', user_email.split('@')[0]])
+        company = random.choice(['北京cdf', 'cdf北京'])
+        title = info['title']
+        message = random.choice(['补货了', '有货了', '有更新了', '有存库了'])
+        header = '{name}, {company} {title} {message} '.format(name=name, company=company, title=title, message=message)
+        return header
 
     def update_query_user_status(self, goods_id, goods_info):
         update_flag = False
@@ -180,7 +212,7 @@ class Worker(threading.Thread):
                     if goods_info['status'] is None:  # 访问失败或出错，直接返回
                         continue
 
-                    logger.info('goods info: [{0}].'.format(goods_info))
+                    # logger.info('goods info: [{0}].'.format(goods_info))
 
                     if goods_info['status'] == '在售':
                         logger.info('goods on sale: [{0}].'.format(goods_info))
@@ -188,10 +220,19 @@ class Worker(threading.Thread):
                     update_flag, mail_users = self.update_query_user_status(goods_id, goods_info)
 
                     random.shuffle(mail_users)
+
+                    if mail_users:
+                        logger.info('goods[{0}] send mail to [{1}].'.format(goods_info, mail_users))
+                        if self.send_mail(goods_info, mail_users[0]):
+                            for user in mail_users:
+                                self.user_status_dict[user][goods_id] = True
+
                     for user in mail_users:
                         logger.info('goods[{0}] send mail to [{1}].'.format(goods_info, self.user_info_dict[user]))
-                        # if self.send_mail(goods_info, user):  # 发送成功，用户状态字典中对应的状态变为True
-                        #     self.user_status_dict[user][goods_id] = True
+                        if self.send_mail(goods_info, user):  # 发送成功，用户状态字典中对应的状态变为True
+                            self.user_status_dict[user][goods_id] = True
+                        # else:
+                        #     logger.info('failed goods[{0}] send mail to [{1}].'.format(goods_info, self.user_info_dict[user]))
 
                     if update_flag:
                         self.message_queue.add('user_status_dict')
