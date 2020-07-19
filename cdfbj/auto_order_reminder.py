@@ -7,14 +7,13 @@ import reader
 import logging
 import datetime
 import requests
-from on_sale_remind_worker import Worker
+from auto_order_remind_worker import Worker
 
 
 logger = logging.getLogger(__name__)
 
 
-class OnSaleReminder(object):
-
+class AutoOrderReminder(object):
     config = None
     message_queue = None
     goods_user_info = None      # 产品用户字典，记录产品订阅的用户
@@ -32,7 +31,7 @@ class OnSaleReminder(object):
 
     def load_goods_user_info(self):
         filename = self.config['goods_user_file']
-        self.goods_user_info, self.user_info_dict = reader.load_goods_user_info_v3(filename)
+        self.goods_user_info, self.user_info_dict = reader.load_lock_goods_user_info(filename)
 
     def load_user_status(self):
         try:
@@ -54,11 +53,11 @@ class OnSaleReminder(object):
         for user, info in self.user_info_dict.items():
             if user not in self.user_status_dict.keys():
                 self.user_status_dict[user] = {}
-                logger.info('new on sale remind user[{0}].'.format(user))
+                logger.info('new auto order remind user[{0}].'.format(user))
             for goods_id in info.get('goods', {}).keys():
                 if goods_id not in self.user_status_dict[user].keys():
                     self.user_status_dict[user][goods_id] = False
-                    logger.info('new on sale remind goods[{0}] for user[{1}].'.format(goods_id, user))
+                    logger.info('new auto order remind goods[{0}] for user[{1}].'.format(goods_id, user))
 
         # 将不再订阅的用户和用户不再订阅的产品从用户状态字典中删去
         canceled_users = []
@@ -67,36 +66,19 @@ class OnSaleReminder(object):
             if user not in self.user_info_dict.keys():
                 canceled_users.append(user)
                 # self.user_status_dict.pop(user)
-                logger.info('cancel on sale remind user[{0}].'.format(user))
+                logger.info('cancel auto order remind user[{0}].'.format(user))
                 continue
             for goods_id in status.keys():
                 if goods_id not in self.user_info_dict[user]['goods'].keys():
                     canceled_good_ids.append((user, goods_id))
                     # self.user_status_dict[user].pop(goods_id)
-                    logger.info('cancel on sale remind goods[{0}] for user[{1}].'.format(goods_id, user))
+                    logger.info('cancel auto order remind goods[{0}] for user[{1}].'.format(goods_id, user))
 
         for user in canceled_users:
             self.user_status_dict.pop(user)
 
         for user, goods_id in canceled_good_ids:
             self.user_status_dict[user].pop(goods_id)
-
-    def load_goods_status(self):
-        try:
-            f = open(self.config['goods_status_file'], 'r')
-            content = f.read()
-            if not content.strip():
-                content = '{}'
-        except:
-            content = '{}'
-        self.goods_status_dict = json.loads(content)
-
-    def get_goods_status_slice(self, goods_list):
-        goods_status_slice = {}
-        for goods_id in goods_list:
-            if goods_id in self.goods_status_dict.keys():
-                goods_status_slice[goods_id] = self.goods_status_dict[goods_id]
-        return goods_status_slice
 
     def save_user_status(self):
         try:
@@ -193,11 +175,3 @@ class OnSaleReminder(object):
         self.start_to_monitor()
         pass
 
-
-if __name__ == '__main__':
-    util.config_logger('on_sale_reminder')
-
-    import config
-    reminder = OnSaleReminder(config.ON_SALE_REMINDER_CONFIG)
-    reminder.execute()
-    pass
