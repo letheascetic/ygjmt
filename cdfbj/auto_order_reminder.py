@@ -125,7 +125,7 @@ class AutoOrderReminder(object):
                 self.ip_pool.remove(ip_info)
                 self.ip_pool_statistics['expired'] = self.ip_pool_statistics['expired'] + 1
                 self.ip_pool_statistics['used'] = self.ip_pool_statistics['used'] + 1
-            if ip_info.get('failed_times', 0) >= 10:
+            if ip_info.get('failed_times', 0) >= 15:
                 logger.info('pop bad proxy: [{0}].'.format(ip_info))
                 self.ip_pool.remove(ip_info)
                 self.ip_pool_statistics['bad'] = self.ip_pool_statistics['bad'] + 1

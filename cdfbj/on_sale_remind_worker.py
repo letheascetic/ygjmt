@@ -104,22 +104,27 @@ class Worker(threading.Thread):
 
         return goods_info
 
-    def send_mail(self, info, user):
+    def send_mail(self, info, user, self_sender=True):
         goods_title = info['title']
         content = str(info)
         # content = self.make_mail_content(info, user)
         # subject = self.make_mail_header(info, user)
 
         user_email = self.user_info_dict[user]['email']
-        to_addrs = [user_email]
+        if self_sender and self.user_info_dict[user]['email_code'] is not None:
+            from_addr, code = user_email, self.user_info_dict[user]['email_code']
+            to_addrs = [user_email]
+        else:
+            sender = random.choice(config.ON_SALE_REMINDER_CONFIG['mail_senders'])
+            from_addr, code = sender['email'], sender['code']
+            to_addrs = [from_addr]
 
-        sender = random.choice(config.ON_SALE_REMINDER_CONFIG['mail_senders'])
-        from_addr, code = sender['email'], sender['code']
-
-        to_addrs = [from_addr]
-
-        smtp_server = 'smtp.163.com'      # 固定写死
-        smtp_port = 465                   # 固定端口
+        if '163.com' in from_addr:
+            smtp_server = 'smtp.163.com'      # 固定写死
+            smtp_port = 465                   # 固定端口
+        else:
+            smtp_server = 'smtp.qq.com'      # 固定写死
+            smtp_port = 465                   # 固定端口
 
         i = 0
         while i < 3:
@@ -233,7 +238,17 @@ class Worker(threading.Thread):
 
                     if mail_users:
                         logger.info('goods[{0}] send mail to [{1}].'.format(goods_info, mail_users))
-                        if self.send_mail(goods_info, mail_users[0]):
+                        self_send_mail_users = set()
+                        for user in mail_users:
+                            if self.user_info_dict[user]['email_code'] is not None:
+                                self_send_mail_users.add(user)
+
+                        for user in self_send_mail_users:
+                            if self.send_mail(goods_info, user):
+                                self.user_status_dict[user][goods_id] = True
+
+                        if self.send_mail(goods_info, mail_users[0], self_sender=False):
+                            mail_users = set(mail_users) - self_send_mail_users
                             for user in mail_users:
                                 self.user_status_dict[user][goods_id] = True
 

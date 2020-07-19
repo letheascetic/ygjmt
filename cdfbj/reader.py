@@ -83,8 +83,16 @@ def load_goods_user_info_v3(filename):
         email = email.strip()
         user = email
 
+        email_code = booksheet.cell(row=i, column=16).value
+        if email_code is not None and not email_code.strip().isspace():
+            email_code = email_code.strip()
+        else:
+            email_code = None
+
         if user in user_info_dict.keys():     # 同一个人过去的数据
             continue
+
+        user_info_dict[user] = {'email': email, 'email_code': email_code, 'password': None, 'goods': {}}
 
         url_order_num_list = [(booksheet.cell(row=i, column=j).value, booksheet.cell(row=i, column=j+6).value) for j in range(4, 10)]
         url_order_num_list = [(x, y) for (x, y) in url_order_num_list if x is not None]
@@ -99,9 +107,6 @@ def load_goods_user_info_v3(filename):
                     order_num = 1
                 else:
                     order_num = int(order_num)
-
-                if user not in user_info_dict.keys():
-                    user_info_dict[user] = {'email': email, 'password': None, 'goods': {}}
 
                 user_info_dict[user]['goods'][goods_id] = order_num
 
