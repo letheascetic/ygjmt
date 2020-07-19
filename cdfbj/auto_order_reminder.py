@@ -175,3 +175,11 @@ class AutoOrderReminder(object):
         self.start_to_monitor()
         pass
 
+
+if __name__ == '__main__':
+    util.config_logger('auto_order_reminder')
+
+    import config
+    reminder = AutoOrderReminder(config.ON_SALE_REMINDER_CONFIG)
+    reminder.execute()
+    pass
