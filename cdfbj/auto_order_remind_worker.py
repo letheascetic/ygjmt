@@ -9,6 +9,7 @@ import requests
 import smtplib
 import logging
 import threading
+import auto_order
 
 from email.header import Header
 from email.utils import formataddr
@@ -103,25 +104,29 @@ class Worker(threading.Thread):
         for user in users:
             # 存库大于等于订阅阈值且还没锁单，加入锁单列表
             if stock >= self.user_info_dict[user]['goods'][goods_id] and self.user_status_dict[user][goods_id] is False:
-                mail_users.append(user)
+                if 'login_user' in self.user_info_dict[user].keys() and 'login_password' in self.user_info_dict[user].keys():
+                    mail_users.append(user)
         return mail_users
 
-    def send_mail(self, info, user):
+    def send_mail(self, info, user, self_sender=True):
         goods_title = info['title']
-        content = str(info)
-        # content = self.make_mail_content(info, user)
-        # subject = self.make_mail_header(info, user)
+        content = '{0}: {1} 锁单成功了,请尽快支付.'.format(user, goods_title)
 
         user_email = self.user_info_dict[user]['email']
-        to_addrs = [user_email]
+        if self_sender and self.user_info_dict[user]['email_code'] is not None:
+            from_addr, code = user_email, self.user_info_dict[user]['email_code']
+            to_addrs = [user_email]
+        else:
+            sender = random.choice(config.AUTO_ORDER_REMINDER_CONFIG['mail_senders'])
+            from_addr, code = sender['email'], sender['code']
+            to_addrs = [from_addr]
 
-        sender = random.choice(config.ON_SALE_REMINDER_CONFIG['mail_senders'])
-        from_addr, code = sender['email'], sender['code']
-
-        to_addrs = [from_addr]
-
-        smtp_server = 'smtp.163.com'      # 固定写死
-        smtp_port = 465                   # 固定端口
+        if '163.com' in from_addr:
+            smtp_server = 'smtp.163.com'      # 固定写死
+            smtp_port = 465                   # 固定端口
+        else:
+            smtp_server = 'smtp.qq.com'      # 固定写死
+            smtp_port = 465                   # 固定端口
 
         i = 0
         while i < 3:
@@ -134,7 +139,7 @@ class Worker(threading.Thread):
                 message['From'] = formataddr(["阳光姐妹淘鸭", from_addr])
                 message['To'] = ','.join(to_addrs)        # 收件人
                 # message['Cc'] = from_addr
-                subject = '{0}: 库存{1}-{2}'.format('cdf北京', info['库存'], goods_title)
+                subject = '{0}: 锁单成功了-{1}'.format('cdf北京', goods_title)
                 message['Subject'] = Header(subject)  # 邮件标题
                 stmp.sendmail(from_addr, to_addrs, message.as_string())
                 return True
@@ -177,10 +182,13 @@ class Worker(threading.Thread):
 
                     while len(mail_users) != 0:
                         user = random.choice(mail_users)
-                        pass    # lock goods
-                        # if success, save user updates
-                        # self.user_status_dict[user][goods_id] = True
-                        # send mail, self.message_queue.add('user_status_dict')
+                        if auto_order.lock_order(self.user_info_dict[user], goods_id, proxies):
+                            logger.info('[{0}] auto order [{1}] success.'.format(user, goods_info))
+                            self.user_status_dict[user][goods_id] = True
+                            self.send_mail(goods_info, user)
+                            if self.user_info_dict[user]['email_code'] is not None:
+                                self.send_mail(goods_info, user, self_sender=False)
+                            self.message_queue.add('user_status_dict')
 
                         while len(self.ip_pool) == 0:
                             logger.info('ip pool is empty, waiting.')
@@ -192,9 +200,6 @@ class Worker(threading.Thread):
                         goods_info = self.get_goods_info(goods_id, ip_info, proxies)
                         if goods_info['status'] is None:  # 访问失败或出错，直接返回
                             break
-
-                        if goods_info['status'] == '在售':
-                            logger.info('goods on sale: [{0}].'.format(goods_info))
 
                         mail_users = self.query_user_status(goods_id, goods_info)
 

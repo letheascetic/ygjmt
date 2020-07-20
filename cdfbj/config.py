@@ -31,8 +31,8 @@ AUTO_ORDER_REMINDER_CONFIG = {
     'interval': 3,
     'worker_num': 1,
     'ip_pool_num': 1,
-    'goods_user_file': '北京日上锁单0718.xlsx',
-    'user_info_file': '北京日上锁单用户信息0718',
+    'goods_user_file': '北京日上锁单订阅0719.xlsx',
+    'user_info_file': '北京日上锁单用户信息0718.xlsx',
     'user_status_file': 'lock_user_status.txt',
     'mail_senders': [
         {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},        # cdfbj_vx1

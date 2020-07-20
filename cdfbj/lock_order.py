@@ -256,7 +256,7 @@ def lock_order(user_count, goods_id, num):
 
     if token is None:
         token = login(user_count)
-    elif (datetime.datetime.now() - secret_key['name'].get('time')).seconds > 3600:
+    elif (datetime.datetime.now() - secret_key['name'].get('time')).total_seconds() > 3600:
         token = login(user_count)
 
     if token is None:

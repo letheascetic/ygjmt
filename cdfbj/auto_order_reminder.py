@@ -31,7 +31,9 @@ class AutoOrderReminder(object):
 
     def load_goods_user_info(self):
         filename = self.config['goods_user_file']
-        self.goods_user_info, self.user_info_dict = reader.load_lock_goods_user_info(filename)
+        self.goods_user_info, self.user_info_dict = reader.load_auto_order_goods_user_info(filename)
+        filename = self.config['user_info_file']
+        reader.update_auto_order_user_info(filename, self.user_info_dict)
 
     def load_user_status(self):
         try:
@@ -120,12 +122,12 @@ class AutoOrderReminder(object):
         for ip_info in self.ip_pool:
             expire_time = datetime.datetime.strptime(ip_info['expire_time'], '%Y-%m-%d %H:%M:%S')
             time_rest = (expire_time - datetime.datetime.now()).total_seconds()
-            if time_rest < 30:
+            if time_rest < 60:
                 logger.info('pop time expired proxy: [{0}].'.format(ip_info))
                 self.ip_pool.remove(ip_info)
                 self.ip_pool_statistics['expired'] = self.ip_pool_statistics['expired'] + 1
                 self.ip_pool_statistics['used'] = self.ip_pool_statistics['used'] + 1
-            if ip_info.get('failed_times', 0) >= 15:
+            if ip_info.get('failed_times', 0) >= 10:
                 logger.info('pop bad proxy: [{0}].'.format(ip_info))
                 self.ip_pool.remove(ip_info)
                 self.ip_pool_statistics['bad'] = self.ip_pool_statistics['bad'] + 1
@@ -135,7 +137,8 @@ class AutoOrderReminder(object):
         if new_num <= 0:
             return
 
-        url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city=0&yys=0&port=11&pack=110082&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions=&gm=4'
+        url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city=0&yys=0&port=11&pack=110169&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions=&gm=4'
+        # url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city=0&yys=0&port=11&pack=110082&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions=&gm=4'
         url = url.format(new_num)
 
         try:
@@ -169,7 +172,7 @@ class AutoOrderReminder(object):
     def execute(self):
         self.load_goods_user_info()     # 从excel读取用户信息和产品订阅信息
         self.load_user_status()         # 读取过去存储的用户字典
-        proxy_num = self.config.get('ip_pool_num', 5)
+        proxy_num = self.config.get('ip_pool_num', 1)
         self.update_proxies(proxy_num)
         self.activate_workers()         # 激活workers，开始监控
         self.start_to_monitor()
@@ -180,6 +183,6 @@ if __name__ == '__main__':
     util.config_logger('auto_order_reminder')
 
     import config
-    reminder = AutoOrderReminder(config.ON_SALE_REMINDER_CONFIG)
+    reminder = AutoOrderReminder(config.AUTO_ORDER_REMINDER_CONFIG)
     reminder.execute()
     pass
