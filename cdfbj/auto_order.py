@@ -431,10 +431,10 @@ if __name__ == "__main__":
     user = {'email': 'yizhifight@163.com',
             'login_user': '15850563761',
             'login_password': 'Wc19910706',
-            'province': '江苏省',
-            'city': '南京市',
-            'distinct': '秦淮区',
-            'address': '光华路鸿信清新家园22栋',
+            'province': '江苏',
+            'city': '南京',
+            'distinct': '秦淮 `',
+            'address': '江苏省南京市秦淮区光华路鸿信清新家园22栋',
             'flight': 'SU408',
             'seat': 'L48',
             'arrive_time': '2017-05-01 12:00:00',
@@ -444,8 +444,8 @@ if __name__ == "__main__":
 
     goods_id = '2c919459726fe64a01728323aca12341'
 
-    host = '58.218.200.225'
-    port = '4167'
+    host = '58.218.92.30'
+    port = '2360'
     proxies = {
         'http': 'http://{0}:{1}'.format(host, port),
         'https': 'https://{0}:{1}'.format(host, port)
