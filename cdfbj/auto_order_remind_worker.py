@@ -110,7 +110,7 @@ class Worker(threading.Thread):
 
     def send_mail(self, info, user, self_sender=True):
         goods_title = info['title']
-        content = '{0}: {1} 锁单成功了,请尽快支付.'.format(user, goods_title)
+        content = '{0}: {1} 锁单成功了,请尽快支付.'.format(self.user_info_dict[user]['wechat'], goods_title)
 
         user_email = self.user_info_dict[user]['email']
         if self_sender and self.user_info_dict[user]['email_code'] is not None:
@@ -139,7 +139,8 @@ class Worker(threading.Thread):
                 message['From'] = formataddr(["阳光姐妹淘鸭", from_addr])
                 message['To'] = ','.join(to_addrs)        # 收件人
                 # message['Cc'] = from_addr
-                subject = '{0}: 锁单成功了-{1}'.format('cdf北京', goods_title)
+                subject = '{0}:{1} 你的{2}锁单成功了'.format('cdf北京', self.user_info_dict[user]['wechat'], goods_title)
+                message['Subject'] = Header(subject)  # 邮件标题
                 message['Subject'] = Header(subject)  # 邮件标题
                 stmp.sendmail(from_addr, to_addrs, message.as_string())
                 return True

@@ -180,7 +180,8 @@ def load_auto_order_goods_user_info(filename):
 
         user_info_dict[user] = {'email': email, 'email_code': email_code, 'goods': {}}
 
-        url_order_num_list = [(booksheet.cell(row=i, column=j).value, booksheet.cell(row=i, column=j+6).value) for j in range(4, 10)]
+        z = [4, 6, 8, 10, 12, 14]
+        url_order_num_list = [(booksheet.cell(row=i, column=j).value, booksheet.cell(row=i, column=j+1).value) for j in z]
         url_order_num_list = [(x, y) for (x, y) in url_order_num_list if x is not None]
         for url, order_num, in url_order_num_list:
             try:
@@ -220,7 +221,8 @@ def update_auto_order_user_info(filename, user_info_dict):
     i = 1
     for row in rows:
         i = i+1
-        email = booksheet.cell(row=i, column=1).value
+
+        email = booksheet.cell(row=i, column=4).value
         if email is None or email.strip().isspace() or '@' not in email:
             continue
         email = email.strip()
@@ -230,36 +232,39 @@ def update_auto_order_user_info(filename, user_info_dict):
             user_info_dict[user] = {'email': email, 'email_code': None, 'goods': {}}
 
         if user_info_dict[user]['email_code'] is None:
-            email_code = booksheet.cell(row=i, column=2).value
+            email_code = booksheet.cell(row=i, column=5).value
             if email_code is not None and not email_code.strip().isspace():
                 email_code = email_code.strip()
             else:
                 email_code = None
             user_info_dict[user]['email_code'] = email_code
 
-        login_user = booksheet.cell(row=i, column=3).value
+        wechat = booksheet.cell(row=i, column=3).value
+        user_info_dict[user]['wechat'] = wechat
+
+        login_user = booksheet.cell(row=i, column=6).value
         user_info_dict[user]['login_user'] = login_user.strip()
 
-        login_password = booksheet.cell(row=i, column=4).value
+        login_password = booksheet.cell(row=i, column=7).value
         user_info_dict[user]['login_password'] = login_password.strip()
 
-        province = booksheet.cell(row=i, column=5).value
+        province = booksheet.cell(row=i, column=8).value
         user_info_dict[user]['province'] = province.strip()
 
-        city = booksheet.cell(row=i, column=6).value
+        city = booksheet.cell(row=i, column=9).value
         user_info_dict[user]['city'] = city.strip()
 
-        distinct = booksheet.cell(row=i, column=7).value
+        distinct = booksheet.cell(row=i, column=10).value
         user_info_dict[user]['distinct'] = distinct.strip()
 
-        address = booksheet.cell(row=i, column=8).value
+        address = booksheet.cell(row=i, column=11).value
         user_info_dict[user]['address'] = address.strip()
 
         # flight = booksheet.cell(row=i, column=9).value
         flight = 'SU20{0}'.format(random.choice(range(10)))
         user_info_dict[user]['flight'] = flight.strip()
 
-        arrive_time = '2017-0{0}-0{1} 12:00:00'.format(random.choice(range(10)), random.choice(range(10)))
+        arrive_time = '2017-0{0}-0{1} 12:00:00'.format(random.choice(range(1, 10)), random.choice(range(1, 10)))
         # arrive_time = booksheet.cell(row=i, column=10).value
         user_info_dict[user]['arrive_time'] = arrive_time.strip()
 
