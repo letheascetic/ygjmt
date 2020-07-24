@@ -1,10 +1,23 @@
 # coding: utf-8
 
-import sqlite3
-
 import click
+import logging
+import sqlite3
+from flaskr import config
 from flask import current_app, g
 from flask.cli import with_appcontext
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+
+
+logger = logging.getLogger(__name__)
+
+engine = create_engine(config.MYSQL_CONFIG_TESTING['DB_CONNECT_STRING'], echo=False)
+db_session = scoped_session(sessionmaker(bind=engine))
+
+Base = declarative_base()
+Base.query = db_session.query_property()
 
 
 def get_db():
