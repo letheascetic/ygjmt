@@ -211,7 +211,7 @@ def __confirm(token, goods_id, goods_num, goods_info, proxies):
                'Connection': 'keep-alive',
                'Sec-Fetch-Mode': 'cors',
                'Origin': 'https://m.yuegowu.com',
-               'distribute-channel': "{'channgit aelType': 1, 'inviteeId': null}",
+               'distribute-channel': "{'channelType': 1, 'inviteeId': null}",
                'Authorization': 'Bearer {0}'.format(token),
                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_2_6 like Mac OS X) AppleWebKit/604.5.6 (KHTML, like Gecko) Mobile/15D100 MicroMessenger/7.0.13(0x17000d2a) NetType/WIFI Language/zh_CN',
                'Content-Type': 'application/json',
