@@ -255,7 +255,7 @@ def __confirm(token, goods_id, goods_num, goods_info, proxies):
         except Exception as e:
             logger.info('confirm order[{0}][{1}] exception: [{2}].'.format(goods_id, goods_num, e))
 
-    logger.info('confirm order[{0}][{1}] failed.'.format(goods_id, num))
+    logger.info('confirm order[{0}][{1}] failed.'.format(goods_id, goods_num))
     return False
 
 
@@ -357,7 +357,7 @@ def __commit(user, token, goods_id, goods_info, proxies, address_id):
         except Exception as e:
             logger.info('commit order[{0}] exception: [{0}].'.format(goods_id, e))
 
-    logger.info('commit order[{0}][{1}] failed.'.format(goods_id, num))
+    logger.info('commit order[{0}][{1}] failed.'.format(goods_id, user))
     return False
 
 
