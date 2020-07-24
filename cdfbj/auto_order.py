@@ -103,7 +103,7 @@ def __add_to_cart(token, goods_id, num, proxies):
                 content_json = json.loads(content)
                 logger.info('get request content: [{0}].'.format(content_json))
                 if content_json.get('code') == 'K-000000':
-                    logger.info('add to cart[{0}][{a1}] success.'.format(goods_id, num))
+                    logger.info('add to cart[{0}][{1}] success.'.format(goods_id, num))
                     return True
                 elif content_json.get('code') == 'K-050215':
                     logger.info('goods already in cart[{0}][{1}].'.format(goods_id, num))
@@ -246,6 +246,9 @@ def __confirm(token, goods_id, goods_num, goods_info, proxies):
                 content_json = json.loads(content)
                 logger.info('get request content: [{0}].'.format(content_json))
                 if content_json.get('code') == 'K-000000':
+                    logger.info('confirm order[{0}][{1}] success.'.format(goods_id, goods_num))
+                    return True
+                elif content_json.get('code') == 'K-999997':
                     logger.info('confirm order[{0}][{1}] success.'.format(goods_id, goods_num))
                     return True
             return False
