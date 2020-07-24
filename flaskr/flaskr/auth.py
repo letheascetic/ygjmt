@@ -1,19 +1,25 @@
 # coding: utf-8
 
+import logging
 import functools
 
-from flask import Blueprint
-from flask import flash
+
 from flask import g
-from flask import redirect
-from flask import render_template
+from flask import flash
 from flask import request
 from flask import session
 from flask import url_for
+from flask import redirect
+from flask import Blueprint
+from flask import render_template
+
+from flaskr.models import *
+from flaskr.db import db_session
 from werkzeug.security import check_password_hash
 from werkzeug.security import generate_password_hash
 
-from flaskr.db import get_db
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -33,16 +39,13 @@ def login_required(view):
 
 @bp.before_app_request
 def load_logged_in_user():
-    """If a user id is stored in the session, load the user object from
-    the database into ``g.user``."""
+    """If a user id is stored in the session, load the user object from the database into ``g.user``."""
     user_id = session.get("user_id")
 
     if user_id is None:
         g.user = None
     else:
-        g.user = (
-            get_db().execute("SELECT * FROM user WHERE id = ?", (user_id,)).fetchone()
-        )
+        g.user = User.query(User.id == user_id).first()
 
 
 @bp.route("/register", methods=("GET", "POST"))
@@ -55,28 +58,28 @@ def register():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        db = get_db()
+
         error = None
 
         if not username:
             error = "Username is required."
         elif not password:
             error = "Password is required."
-        elif (
-            db.execute("SELECT id FROM user WHERE username = ?", (username,)).fetchone()
-            is not None
-        ):
-            error = f"User {username} is already registered."
+        else:
+            if User.query.filter(User.username == username).first():
+                error = f"User {username} is already registered."
 
         if error is None:
-            # the name is available, store it in the database and go to
-            # the login page
-            db.execute(
-                "INSERT INTO user (username, password) VALUES (?, ?)",
-                (username, generate_password_hash(password)),
-            )
-            db.commit()
-            return redirect(url_for("auth.login"))
+            # the name is available, store it in the database and go to the login page
+            user = User(username, generate_password_hash(password))
+            try:
+                db_session.add(user)
+                db_session.commit()
+                return redirect(url_for("auth.login"))
+            except Exception as e:
+                logger.exception('register user[{0}] exception: [{1}].'.format(user, e))
+                db_session.rollback()
+                error = "Register failed."
 
         flash(error)
 
@@ -89,21 +92,20 @@ def login():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        db = get_db()
+
         error = None
-        user = db.execute(
-            "SELECT * FROM user WHERE username = ?", (username,)
-        ).fetchone()
+
+        user = User.query.filter(User.username == username).first()
 
         if user is None:
             error = "Incorrect username."
-        elif not check_password_hash(user["password"], password):
+        elif not check_password_hash(user.password, password):
             error = "Incorrect password."
 
         if error is None:
             # store the user id in a new session and return to the index
             session.clear()
-            session["user_id"] = user["id"]
+            session["user_id"] = user.id
             return redirect(url_for("index"))
 
         flash(error)

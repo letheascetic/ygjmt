@@ -5,4 +5,5 @@
 # from flaskr.models.hndf import *
 
 from flaskr.models.user import *
+from flaskr.models.post import Post
 
