@@ -1,5 +1,6 @@
 # coding: utf-8
 
+import util
 import time
 import uuid
 import json
@@ -65,6 +66,105 @@ def __login(user, proxies):
                 return None
         except Exception as e:
             logger.info('[{0}] login exception: [{1}].'.format(user_name, e))
+
+
+# step two
+def __query_cart(token, goods_id, proxies):
+    url = 'https://mbff.yuegowu.com/site/purchases?regId={0}'.format(uuid.uuid4())
+    headers = {'Host': 'mbff.yuegowu.com',
+               'Connection': 'keep-alive',
+               'Sec-Fetch-Mode': 'cors',
+               'Origin': 'https://m.yuegowu.com',
+               'distribute-channel': "{'channelType': 1, 'inviteeId': null}",
+               'Authorization': 'Bearer {0}'.format(token),
+               'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_2_6 like Mac OS X) AppleWebKit/604.5.6 (KHTML, like Gecko) Mobile/15D100 MicroMessenger/7.0.13(0x17000d2a) NetType/WIFI Language/zh_CN',
+               'Content-Type': 'application/json',
+               'Accept': '*/*',
+               'Sec-Fetch-Site': 'same-site',
+               'Referer': 'https://m.yuegowu.com/purchase-order',
+               'Accept-Encoding': 'gzip, deflate, br',
+               'Accept-Language': 'zh-CN,zh;q=0.9'
+               }
+
+    data = {"goodsInfoIds": []}
+    data_json = json.dumps(data)
+    handler = request.ProxyHandler(proxies)
+    opener = request.build_opener(handler)
+    req = request.Request(url=url, data=data_json.encode(encoding='utf-8'), headers=headers, method='POST')
+
+    buy_count = None
+
+    i = 0
+    while i < 2:
+        try:
+            i = i + 1
+            response = opener.open(req, timeout=5)
+            if response.status == 200:
+                content = response.read().decode('utf-8')
+                content_json = json.loads(content)
+                logger.info('get request content: [{0}].'.format(content_json))
+                if content_json.get('code') == 'K-000000':
+                    for info in content_json['context']['goodsInfos']:
+                        if info['goodsInfoId'] == goods_id:
+                            buy_count = info['buyCount']
+                            logger.info('query cart info success, goods[{0}] num in cart: [{1}].'.format(goods_id, buy_count))
+                            return buy_count
+                    if buy_count is None:
+                        buy_count = 0  # no goods in cart
+                        logger.info('query cart info success, goods[{0}] num in cart: [{1}].'.format(goods_id, buy_count))
+                        return buy_count
+                else:
+                    # logger.info('query goods[{0}] cart info return code: [{1}].'.format(goods_id, content_json.get('code')))
+                    return buy_count
+        except Exception as e:
+            logger.info('query cart[{0}] exception: [{1}].'.format(goods_id, e))
+
+    logger.info('query cart[{0}] failed.'.format(goods_id))
+    return buy_count
+
+
+def __delete_goods_in_cart(token, goods_id, proxies):
+    url = 'https://mbff.yuegowu.com/site/purchase?regId={0}'.format(uuid.uuid4())
+    headers = {'Host': 'mbff.yuegowu.com',
+               'Connection': 'keep-alive',
+               'Sec-Fetch-Mode': 'cors',
+               'Origin': 'https://m.yuegowu.com',
+               'distribute-channel': "{'channelType': 1, 'inviteeId': null}",
+               'Authorization': 'Bearer {0}'.format(token),
+               'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_2_6 like Mac OS X) AppleWebKit/604.5.6 (KHTML, like Gecko) Mobile/15D100 MicroMessenger/7.0.13(0x17000d2a) NetType/WIFI Language/zh_CN',
+               'Content-Type': 'application/json',
+               'Accept': '*/*',
+               'Sec-Fetch-Site': 'same-site',
+               'Referer': 'https://m.yuegowu.com/purchase-order',
+               'Accept-Encoding': 'gzip, deflate, br',
+               'Accept-Language': 'zh-CN,zh;q=0.9'
+               }
+
+    data = {"goodsInfoIds": [goods_id]}
+    data_json = json.dumps(data)
+    handler = request.ProxyHandler(proxies)
+    opener = request.build_opener(handler)
+    req = request.Request(url=url, data=data_json.encode(encoding='utf-8'), headers=headers, method='DELETE')
+
+    i = 0
+    while i < 2:
+        try:
+            i = i + 1
+            response = opener.open(req, timeout=5)
+            if response.status == 200:
+                content = response.read().decode('utf-8')
+                content_json = json.loads(content)
+                logger.info('get request content: [{0}].'.format(content_json))
+                if content_json.get('code') == 'K-000000':
+                    logger.info('delete goods in cart[{0}] success.'.format(goods_id))
+                    return True
+                else:
+                    return False
+        except Exception as e:
+            logger.info('delete goods in cart[{0}] exception: [{1}].'.format(goods_id, e))
+
+    logger.info('delete goods[{0}] failed.'.format(goods_id))
+    return False
 
 
 # step two: add to cart
@@ -156,10 +256,11 @@ def __submit_order(token, goods_id, goods_num, proxies):
                 if content_json.get('code') == 'K-000000':
                     logger.info('submit order[{0}] success.'.format(goods_id))
                     try:
-                        for info in content_json['context']['goodsInfos']:
-                            if info['goodsInfoId'] == goods_id:
-                                goods_info['goods_price'] = info['salePrice']
-                                break
+                        goods_info['goods_price'] = content_json['context']['tradePrice']
+                        # for info in content_json['context']['goodsInfos']:
+                        #     if info['goodsInfoId'] == goods_id:
+                        #         goods_info['goods_price'] = info['salePrice']
+                        #         break
 
                         goodsMarketingMap = content_json['context']['goodsMarketingMap']
                         if not goodsMarketingMap:
@@ -226,9 +327,13 @@ def __confirm(token, goods_id, goods_num, goods_info, proxies):
     marketingLevelId = goods_info.get('marketingLevelId', None)
     price = goods_info.get('goods_price', None)
     if marketingId is None or marketingLevelId is None:
-        data = {"tradeItems":[{"skuId":goods_id,"num":goods_num, "price": price}],"tradeMarketingList":[],"forceConfirm":False}
+        tradePrice = price * goods_num
+        # data = {"tradeItems": [{"skuId": "2c9194597219d0ad017219dc903b0396", "num": 1}], "tradeMarketingList": [],"forceConfirm": False, "tradePrice": tradePrice}
+        data = {"tradeItems": [{"skuId": goods_id, "num": goods_num}], "tradeMarketingList": [], "forceConfirm": False, "tradePrice": price}
     else:
-        data = {"tradeItems":[{"skuId":goods_id,"num":goods_num, "price": price}],"tradeMarketingList":[{"marketingId":marketingId,"marketingLevelId":marketingLevelId,"skuIds":[goods_id],"giftSkuIds":[]}],"forceConfirm":False}
+        # data = {"tradeItems":[{"skuId":goods_id,"num":goods_num, "price": price}],"tradeMarketingList":[{"marketingId":marketingId,"marketingLevelId":marketingLevelId,"skuIds":[goods_id],"giftSkuIds":[]}],"forceConfirm":False}
+        data = {"tradeItems":[{"skuId":goods_id,"num":goods_num}],"tradeMarketingList":[{"marketingId":marketingId,"marketingLevelId":marketingLevelId,"skuIds":[goods_id],"giftSkuIds":[]}],"forceConfirm":False,"tradePrice":2049.6}
+        # {"tradeItems":[{"skuId":"2c9194597219d0ad017219dc903b0396","num":6}],"tradeMarketingList":[{"marketingId":715,"marketingLevelId":1647,"skuIds":["2c9194597219d0ad017219dc903b0396"],"giftSkuIds":[]}],"forceConfirm":false,"tradePrice":2049.6}
 
     data_json = json.dumps(data)
 
@@ -410,8 +515,19 @@ def lock_order(user, goods_id, proxies):
     token = secret_key_info[user_key]['token']
     goods_num = user['goods'][goods_id]
 
-    if not __add_to_cart(token, goods_id, goods_num, proxies):
+    num_in_cart = __query_cart(token, goods_id, proxies)
+    if num_in_cart is None:
         return False
+    if num_in_cart > goods_num:
+        if not __delete_goods_in_cart(token, goods_id, proxies):
+            return False
+        else:
+            num_in_cart = 0
+
+    num_to_add = goods_num - num_in_cart
+    if num_to_add != 0:
+        if not __add_to_cart(token, goods_id, num_to_add, proxies):
+            return False
 
     goods_info = __get_goods_info(token, goods_id, goods_num, proxies)
     if goods_info is None:
@@ -431,6 +547,8 @@ def lock_order(user, goods_id, proxies):
 
 
 if __name__ == "__main__":
+    util.config_logger('auto_order')
+
     user = {'email': 'yizhifight@163.com',
             'login_user': '15850563761',
             'login_password': 'Wc19910706',
@@ -442,13 +560,13 @@ if __name__ == "__main__":
             'seat': 'L48',
             'arrive_time': '2017-05-01 12:00:00',
             'passport': 'G50442496',
-            'goods': {'2c919459726fe64a01728323aca12341': 3, }
+            'goods': {'2c9194587219d0ae017219dc906503b6': 7, }
             }
 
-    goods_id = '2c919459726fe64a01728323aca12341'
+    goods_id = '2c9194587219d0ae017219dc906503b6'
 
-    host = '58.218.92.30'
-    port = '2360'
+    host = '58.218.92.196'
+    port = '8802'
     proxies = {
         'http': 'http://{0}:{1}'.format(host, port),
         'https': 'https://{0}:{1}'.format(host, port)
