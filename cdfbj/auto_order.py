@@ -103,7 +103,7 @@ def __add_to_cart(token, goods_id, num, proxies):
                 content_json = json.loads(content)
                 logger.info('get request content: [{0}].'.format(content_json))
                 if content_json.get('code') == 'K-000000':
-                    logger.info('add to cart[{0}][{1}] success.'.format(goods_id, num))
+                    logger.info('add to cart[{0}][{a1}] success.'.format(goods_id, num))
                     return True
                 elif content_json.get('code') == 'K-050215':
                     logger.info('goods already in cart[{0}][{1}].'.format(goods_id, num))
@@ -211,7 +211,7 @@ def __confirm(token, goods_id, goods_num, goods_info, proxies):
                'Connection': 'keep-alive',
                'Sec-Fetch-Mode': 'cors',
                'Origin': 'https://m.yuegowu.com',
-               'distribute-channel': "{'channelType': 1, 'inviteeId': null}",
+               'distribute-channel': "{'channgit aelType': 1, 'inviteeId': null}",
                'Authorization': 'Bearer {0}'.format(token),
                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_2_6 like Mac OS X) AppleWebKit/604.5.6 (KHTML, like Gecko) Mobile/15D100 MicroMessenger/7.0.13(0x17000d2a) NetType/WIFI Language/zh_CN',
                'Content-Type': 'application/json',
