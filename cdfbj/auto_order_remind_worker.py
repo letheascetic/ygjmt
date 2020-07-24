@@ -202,6 +202,9 @@ class Worker(threading.Thread):
                         if goods_info['status'] is None:  # 访问失败或出错，直接返回
                             break
 
+                        if goods_info['status'] == '在售':
+                            logger.info('goods on sale: [{0}].'.format(goods_info))
+
                         mail_users = self.query_user_status(goods_id, goods_info)
 
                 except Exception as e:

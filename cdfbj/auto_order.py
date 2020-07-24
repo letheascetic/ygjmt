@@ -152,7 +152,7 @@ def __submit_order(token, goods_id, goods_num, proxies):
             if response.status == 200:
                 content = response.read().decode('utf-8')
                 content_json = json.loads(content)
-                logger.info('get request content: [{0}].'.format(content_json))
+                # logger.info('get request content: [{0}].'.format(content_json))
                 if content_json.get('code') == 'K-000000':
                     logger.info('submit order[{0}] success.'.format(goods_id))
                     try:
