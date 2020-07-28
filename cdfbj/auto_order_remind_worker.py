@@ -103,7 +103,7 @@ class Worker(threading.Thread):
         mail_users = []
         for user in users:
             # 存库大于等于订阅阈值且还没锁单，加入锁单列表
-            if stock >= self.user_info_dict[user]['goods'][goods_id] and self.user_status_dict[user][goods_id] is False:
+            if stock >= self.user_info_dict[user]['goods'][goods_id][0] and self.user_status_dict[user][goods_id] > 0:
                 if 'login_user' in self.user_info_dict[user].keys() and 'login_password' in self.user_info_dict[user].keys():
                     mail_users.append(user)
         return mail_users
@@ -185,7 +185,7 @@ class Worker(threading.Thread):
                         user = random.choice(mail_users)
                         if auto_order.lock_order(self.user_info_dict[user], goods_id, proxies):
                             logger.info('[{0}] auto order [{1}] success.'.format(user, goods_info))
-                            self.user_status_dict[user][goods_id] = True
+                            self.user_status_dict[user][goods_id] = self.user_status_dict[user][goods_id] - 1
                             self.send_mail(goods_info, user)
                             if self.user_info_dict[user]['email_code'] is not None:
                                 self.send_mail(goods_info, user, self_sender=False)

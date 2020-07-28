@@ -513,7 +513,7 @@ def lock_order(user, goods_id, proxies):
         return False
 
     token = secret_key_info[user_key]['token']
-    goods_num = user['goods'][goods_id]
+    goods_num = user['goods'][goods_id][0]
 
     num_in_cart = __query_cart(token, goods_id, proxies)
     if num_in_cart is None:

@@ -180,22 +180,28 @@ def load_auto_order_goods_user_info(filename):
 
         user_info_dict[user] = {'email': email, 'email_code': email_code, 'goods': {}}
 
-        z = [4, 6, 8, 10, 12, 14]
-        url_order_num_list = [(booksheet.cell(row=i, column=j).value, booksheet.cell(row=i, column=j+1).value) for j in z]
-        url_order_num_list = [(x, y) for (x, y) in url_order_num_list if x is not None]
-        for url, order_num, in url_order_num_list:
+        arr = [4, 7, 10, 13, 16, 19]
+        url_order_num_list = [(booksheet.cell(row=i, column=j).value, booksheet.cell(row=i, column=j+1).value,
+                               booksheet.cell(row=i, column=j+2).value) for j in arr]
+        url_order_num_list = [(x, y, z) for (x, y, z) in url_order_num_list if x is not None]
+        for url, order_num, order_times in url_order_num_list:
             try:
                 url = url.strip('')
                 if 'm.yuegowu.com/goods-detail' not in url:
                     continue
-                goods_id = url.split('/')[-1]
+                goods_id = url.split('/')[-1].split('?')[0]
 
                 if order_num is None or not order_num.isnumeric() or int(order_num) <= 1:
                     order_num = 1
                 else:
                     order_num = int(order_num)
 
-                user_info_dict[user]['goods'][goods_id] = order_num
+                if order_times is None or not order_times.isnumeric() or int(order_times) <= 1:
+                    order_times = 1
+                else:
+                    order_times = int(order_times)
+
+                user_info_dict[user]['goods'][goods_id] = (order_num, order_times)
 
             except Exception as e:
                 logger.exception('parse[{0}] user info [{1}:{2}] exception: [{3}].'.format(user, url, order_num, e))

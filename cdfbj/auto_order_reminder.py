@@ -58,7 +58,7 @@ class AutoOrderReminder(object):
                 logger.info('new auto order remind user[{0}].'.format(user))
             for goods_id in info.get('goods', {}).keys():
                 if goods_id not in self.user_status_dict[user].keys():
-                    self.user_status_dict[user][goods_id] = False
+                    self.user_status_dict[user][goods_id] = info['goods'][goods_id][1]      # 初始化为要锁单的次数
                     logger.info('new auto order remind goods[{0}] for user[{1}].'.format(goods_id, user))
 
         # 将不再订阅的用户和用户不再订阅的产品从用户状态字典中删去
