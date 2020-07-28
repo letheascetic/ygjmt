@@ -1,7 +1,7 @@
 # coding: utf-8
 
 import datetime
-from server.db import Base
+from flaskr.db import Base
 from sqlalchemy import Column, Integer, String, BIGINT, VARCHAR, TIMESTAMP
 
 
