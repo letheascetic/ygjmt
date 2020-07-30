@@ -77,7 +77,10 @@ def load_goods_user_info_v3(filename):
     for row in rows:
         i = i+1
         email = booksheet.cell(row=i, column=3).value
-        if email is None or email.strip().isspace() or '@' not in email:
+
+        if email is None:
+            continue
+        elif email.strip().isspace() or '@' not in email:
             logger.warning('error email format: [{0}].'.format(email))
             continue
         email = email.strip()
@@ -109,11 +112,6 @@ def load_goods_user_info_v3(filename):
                     logger.warning('error goods url[{0}] for user[{1}].'.format(url, email))
                     continue
                 goods_id = url.split('=')[-1]
-
-                if order_num is None or not order_num.isnumeric() or int(order_num) <= 1:
-                    order_num = 1
-                else:
-                    order_num = int(order_num)
 
                 user_info_dict[user]['goods'][goods_id] = order_num
 

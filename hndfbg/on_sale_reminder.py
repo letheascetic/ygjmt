@@ -173,14 +173,14 @@ class OnSaleReminder(object):
         logger.info('ip pool statistics: [{0}].'.format(self.ip_pool_statistics))
 
     def start_to_monitor(self):
-        proxy_num = self.config.get('ip_pool_num', 1)
+        # proxy_num = self.config.get('ip_pool_num', 1)
         while True:
             try:
                 while len(self.message_queue) != 0:
                     message = self.message_queue.pop()
                     if message == 'user_status_dict':
                         self.save_user_status()
-                self.update_proxies(proxy_num)
+                # self.update_proxies(proxy_num)
                 time.sleep(10)
             except Exception as e:
                 logger.exception('on sale reminder exception: [{0}].'.format(e))

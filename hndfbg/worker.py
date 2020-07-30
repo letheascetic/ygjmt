@@ -175,7 +175,7 @@ class Worker(threading.Thread):
                 except Exception as e:
                     logger.exception('process goods[{0}] exception: [{1}].'.format(goods_id, e))
 
-            logger.info('thread[{0}] request statistics: [{1}].'.format(self.id, self.request_statistics))
+            # logger.info('thread[{0}] request statistics: [{1}].'.format(self.id, self.request_statistics))
 
     def stop(self):
         self.m_running = 0
