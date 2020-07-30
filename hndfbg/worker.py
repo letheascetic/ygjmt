@@ -2,14 +2,15 @@
 
 import time
 import json
+import config
 import random
 import requests
 import smtplib
 import logging
 import threading
 
-from email.utils import formataddr
 from email.header import Header
+from email.utils import formataddr
 from email.mime.text import MIMEText
 from scrapy.selector import Selector
 
@@ -18,137 +19,163 @@ logger = logging.getLogger(__name__)
 
 
 class Worker(threading.Thread):
-
-    m_running = 1
     id = None
-    goods_user_info = {}
+    m_running = True
 
-    def __init__(self, id, goods_user_info):
+    def __init__(self, id, message_queue, goods_user_info, user_info_dict, user_status_dict, ip_pool):
         threading.Thread.__init__(self)
         self.id = id
+        self.m_running = True
         self.goods_user_info = goods_user_info
+        self.user_info_dict = user_info_dict
+        self.user_status_dict = user_status_dict
+        self.message_queue = message_queue
+        self.ip_pool = ip_pool
+        # self.request_statistics = {'total': 0, 'success': 0, 'failed': 0, 'exception': 0, 'total_time_span': 0, 'success_time_span': 0, 'total_avg_time': 0, 'success_avg_time': 0}
 
-    def get_old_info(self):
-        try:
-            f = open('info[{0}].txt'.format(self.id), 'r')
-            content = f.read()
-            if not content.strip():
-                content = '{}'
-        except Exception as e:
-            content = '{}'
-        info = json.loads(content)
-        return info
+    def get_proxy(self, ip_info):
+        host = ip_info.get('ip', None)
+        port = ip_info.get('port', None)
+        proxies = {
+            'http': 'http://{0}:{1}'.format(host, port),
+            'https': 'https://{0}:{1}'.format(host, port)
+        }
+        return proxies
 
     def get_goods_info(self, goods_id):
+        goods_info = {'title': None, 'url': None, 'status': None}
         try:
-            # time.sleep(random.random() * 0.5)
             url = "https://m.hndfbg.com/goods/detail?goods_id={0}".format(goods_id)
+            goods_info['url'] = url
+
             r = requests.get(url, timeout=10)
             if r.status_code == requests.codes.ok:
                 selector = Selector(response=r)
                 title = selector.xpath('//section[@class = "goods-title"]/div/h3/text()').extract_first()
                 status = selector.xpath('//a[@class = "btn_sold_out"]/text()').extract_first()
                 if not status and title is not None:
-                    status = '在售'
-                return title, url, status
+                    goods_info['title'] = title
+                    goods_info['status'] = '在售'
+                else:
+                    goods_info['title'] = title
+                    goods_info['status'] = '缺货'
             else:
-                logger.info('thread[{0}] request url[{1}] failed with return code: [{2}].'.format(self.id ,url, r.status_code))
-                return None, None, None
+                logger.info('thread[{0}] request url[{1}] failed with return code: [{2}].'.format(self.id, url, r.status_code))
         except Exception as e:
-            logger.exception('thread[{0}] get goods info failed: [{1}].'.format(self.id, e))
-            return None, None, None
+            logger.info('thread[{0}] get goods info exception: [{1}].'.format(self.id, e))
 
-    def send_mail(self, goods_id, info, users):
+        return goods_info
+
+    def send_mail(self, info, user, self_sender=True):
         goods_title = info['title']
         content = str(info)
 
-        from_addr = 'buhuoupdater@163.com'
-        # to_addrs = 'wc1148728402@163.com'   # 接收邮件账号
+        user_email = self.user_info_dict[user]['email']
+        if self_sender and self.user_info_dict[user]['email_code'] is not None:
+            from_addr, code = user_email, self.user_info_dict[user]['email_code']
+            to_addrs = [user_email]
+        else:
+            sender = random.choice(config.ON_SALE_REMINDER_CONFIG['mail_senders'])
+            from_addr, code = sender['email'], sender['code']
+            to_addrs = [from_addr]
 
-        code = 'SKJKHLBZEBRLUVDM'
-        smtp_server = 'smtp.163.com'  # 固定写死
-        smtp_port = 465  # 固定端口
+        if '163.com' in from_addr:
+            smtp_server = 'smtp.163.com'      # 固定写死
+            smtp_port = 465                   # 固定端口
+        else:
+            smtp_server = 'smtp.qq.com'      # 固定写死
+            smtp_port = 465                   # 固定端口
 
-        users_list = list(users)
-        random.shuffle(users_list)
-        user_count = len(users_list)
-        n = 0
-        while n < user_count:
-            to_addrs = users_list[n:n+1]
-            n = n+1
-            i = 0
-            while i < 3:
-                try:
-                    # 配置服务器
-                    stmp = smtplib.SMTP_SSL(smtp_server, smtp_port)
-                    stmp.login(from_addr, code)
-                    # 组装发送内容
-                    message = MIMEText(content, 'plain')  # 发送的内容
-                    # message['From'] = from_addr
-                    message['From'] = formataddr(["阳光姐妹淘鸭", from_addr])
-                    message['To'] = ','.join(to_addrs)        # 收件人
-                    # message['To'] = user
-                    # message['Cc'] = from_addr
-                    subject = '{0}-{1}'.format('海免补货', goods_title)
-                    message['Subject'] = Header(subject)  # 邮件标题
-                    stmp.sendmail(from_addr, to_addrs, message.as_string())
-                    break
-                except Exception as e:
-                    i = i + 1
-                    logger.exception('thread[{0}] send mail[{1}][{2}] failed; [{3}].'.format(self.id, info, users, e))
-                    time.sleep(2)
+        i = 0
+        while i < 3:
+            try:
+                # 配置服务器
+                stmp = smtplib.SMTP_SSL(smtp_server, smtp_port)
+                stmp.login(from_addr, code)
+                # 组装发送内容
+                message = MIMEText(content, 'plain')  # 发送的内容
+                message['From'] = formataddr(["阳光姐妹淘鸭", from_addr])
+                message['To'] = ','.join(to_addrs)        # 收件人
+                subject = '{0}-{1}'.format('海免补货', goods_title)
+                message['Subject'] = Header(subject)  # 邮件标题
+                stmp.sendmail(from_addr, to_addrs, message.as_string())
+                return True
+            except Exception as e:
+                i = i + 1
+                logger.exception('thread[{0}] send mail[{1}] to [{2}] failed; [{3}].'.format(self.id, info, user, e))
+                time.sleep(2)
+        return False
 
-    def save_info(self, info):
-        content = json.dumps(info)
-        f = open('info[{0}].txt'.format(self.id), 'w', encoding='utf-8')
-        f.write(content)
-        f.close()
+    def update_query_user_status(self, goods_id, goods_info):
+        update_flag = False
+        users = self.goods_user_info.get(goods_id, [])
+        mail_users = []
+        for user in users:
+            # 在售且尚未被通知，则加入待通知队列
+            if goods_info['status'] == '在售' and self.user_status_dict[user][goods_id] is False:
+                mail_users.append(user)
+                update_flag = True
+            # 缺货且已通知，则变更为待通知状态
+            elif goods_info['status'] == '缺货' and self.user_status_dict[user][goods_id] is True:
+                self.user_status_dict[user][goods_id] = False
+                update_flag = True
+        return update_flag, mail_users
+
+    def save_user_status(self):
+        goods_status_file = config.ON_SALE_REMINDER_CONFIG['goods_status_file']
+        try:
+            content = json.dumps(self.user_status_dict)
+            f = open(goods_status_file, 'w', encoding='utf-8')
+            f.write(content)
+            f.close()
+        except Exception as e:
+            logger.info('save user status to [{0}] exception: [{1}].'.format(goods_status_file, e))
 
     def run(self):
         i = 0
         while self.m_running:
             i = i + 1
             current_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
-            logger.info('thread[{0}] [{1}], start [{2}] times........................................................................'.format(self.id, current_time, i))
+            logger.info('thread[{0}] [{1}], start [{2}] times........................'.format(self.id, current_time, i))
 
             goods_ids = list(self.goods_user_info.keys())
             random.shuffle(goods_ids)
 
-            old_info = self.get_old_info()
-
-            info = {}
-            new_info = {}
             for goods_id in goods_ids:
-                title, url, status = self.get_goods_info(goods_id)
-                if url is not None:
-                    info[goods_id] = {'title': title, 'url': url, 'status': status}  # 获取到新的数据
-                    # self.send_mail(goods_id, info[goods_id], {'yizhifight@163.com', 'letheascetic@163.com'})
-                    if goods_id not in old_info.keys():     # 新的goods id
-                        new_info[goods_id] = info[goods_id]
-                        if info[goods_id]['status'] == '在售':  # 在售，需要发送邮件
-                            logger.info('thread[{0}] new goods info on sale, send mail[{1}] to [{2}].'.format(
-                                self.id, [goods_id], self.goods_user_info[goods_id]))
-                            self.send_mail(goods_id, info[goods_id], self.goods_user_info[goods_id])
-                        else:
-                            logger.info('thread[{0}] new goods info off sale: [{1}].'.format(self.id, info[goods_id]))
-                    elif info[goods_id]['status'] != old_info[goods_id]['status']:
-                        new_info[goods_id] = info[goods_id]
-                        if info[goods_id]['status'] == '在售':
-                            logger.info('thread[{0}] goods info change to on sale, send mail[{1}] to [{2}].'.format(
-                                self.id, info[goods_id], self.goods_user_info[goods_id]))
-                            self.send_mail(goods_id, info[goods_id], self.goods_user_info[goods_id])
-                        else:
-                            logger.info('thread[{0}] goods info change to off sale: [{1}].'.format(self.id, info[goods_id]))
-                    else:
-                        if info[goods_id]['status'] == '在售':
-                            logger.info('thread[{0}] old goods info on sale: [{1}].'.format(self.id, info[goods_id]))
-                        else:
-                            pass
+                try:
+                    goods_info = self.get_goods_info(goods_id)
 
-            if new_info:
-                # logger.info('goods info change, save to file: [{0}].'.format(info))
-                self.save_info(info)
-                pass
+                    if goods_info['status'] is None:  # 访问失败或出错，直接返回
+                        continue
+
+                    if goods_info['status'] == '在售':
+                        logger.info('goods on sale: [{0}].'.format(goods_info))
+
+                    update_flag, mail_users = self.update_query_user_status(goods_id, goods_info)
+                    random.shuffle(mail_users)
+
+                    if mail_users:
+                        logger.info('goods[{0}] send mail to [{1}].'.format(goods_info, mail_users))
+                        self_send_mail_users = set()
+                        for user in mail_users:
+                            if self.user_info_dict[user]['email_code'] is not None:
+                                self_send_mail_users.add(user)
+
+                        for user in self_send_mail_users:
+                            if self.send_mail(goods_info, user):
+                                self.user_status_dict[user][goods_id] = True
+
+                        if self.send_mail(goods_info, mail_users[0], self_sender=False):
+                            mail_users = set(mail_users) - self_send_mail_users
+                            for user in mail_users:
+                                self.user_status_dict[user][goods_id] = True
+
+                    if update_flag:
+                        self.message_queue.add('user_status_dict')
+                except Exception as e:
+                    logger.exception('process goods[{0}] exception: [{1}].'.format(goods_id, e))
+
+            logger.info('thread[{0}] request statistics: [{1}].'.format(self.id, self.request_statistics))
 
     def stop(self):
         self.m_running = 0
