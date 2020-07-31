@@ -37,7 +37,11 @@ AUTO_ORDER_REMINDER_CONFIG = {
     'mail_senders': [
         {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},        # cdfbj_vx1
         # {"email": 'letheascetic@163.com', 'code': 'BGDAEEMWDFDGBRVQ'},        # cdfbj_vx1
-        # {"email": 'cdf_bj_updater_2@163.com ', 'code': 'SBMMBSAHCMPDUOWC'},	    # cdfbj_vx2
+        # {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},	    # cdfbj_vx2
         # {"email": 'cdf_bj_updater_3@163.com', 'code': 'OAJFKDISCBDVRGJE'},	    # cdfbj
+    ],
+    'super_users': [
+        'cdf_bj_updater@163.com',
+        'letheascetic@163.com'
     ]
 }

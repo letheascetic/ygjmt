@@ -182,7 +182,15 @@ class Worker(threading.Thread):
                     mail_users = self.query_user_status(goods_id, goods_info)
 
                     while len(mail_users) != 0:
-                        user = random.choice(mail_users)
+                        user = None
+                        for super_user in config.AUTO_ORDER_REMINDER_CONFIG['super_users']:
+                            if super_user in mail_users:
+                                user = super_user
+                                break
+
+                        if user is None:
+                            user = random.choice(mail_users)
+
                         if auto_order.lock_order(self.user_info_dict[user], goods_id, proxies):
                             logger.info('[{0}] auto order [{1}] success.'.format(user, goods_info))
                             self.user_status_dict[user][goods_id] = self.user_status_dict[user][goods_id] - 1
