@@ -54,7 +54,7 @@ def __login(user, proxies):
             if response.status == 200:
                 content = response.read().decode('utf-8')
                 content_json = json.loads(content)
-                logger.info('get request content: [{0}].'.format(content_json))
+                logger.info('get request content: [{0}].'.format(content))
                 if content_json.get('context', None) is not None:
                     token = content_json['context'].get('token', None)
                     customer_id = content_json['context'].get('customerId', None)
@@ -102,7 +102,7 @@ def __query_cart(token, goods_id, proxies):
             if response.status == 200:
                 content = response.read().decode('utf-8')
                 content_json = json.loads(content)
-                logger.info('get request content: [{0}].'.format(content_json))
+                logger.info('get request content: [{0}].'.format(content))
                 if content_json.get('code') == 'K-000000':
                     for info in content_json['context']['goodsInfos']:
                         if info['goodsInfoId'] == goods_id:
@@ -154,7 +154,7 @@ def __delete_goods_in_cart(token, goods_id, proxies):
             if response.status == 200:
                 content = response.read().decode('utf-8')
                 content_json = json.loads(content)
-                logger.info('get request content: [{0}].'.format(content_json))
+                logger.info('get request content: [{0}].'.format(content))
                 if content_json.get('code') == 'K-000000':
                     logger.info('delete goods in cart[{0}] success.'.format(goods_id))
                     return True
@@ -201,7 +201,7 @@ def __add_to_cart(token, goods_id, num, proxies):
             if response.status == 200:
                 content = response.read().decode('utf-8')
                 content_json = json.loads(content)
-                logger.info('get request content: [{0}].'.format(content_json))
+                logger.info('get request content: [{0}].'.format(content))
                 if content_json.get('code') == 'K-000000':
                     logger.info('add to cart[{0}][{1}] success.'.format(goods_id, num))
                     return True
@@ -252,7 +252,7 @@ def __submit_order(token, goods_id, goods_num, proxies):
             if response.status == 200:
                 content = response.read().decode('utf-8')
                 content_json = json.loads(content)
-                # logger.info('get request content: [{0}].'.format(content_json))
+                # logger.info('get request content: [{0}].'.format(content))
                 if content_json.get('code') == 'K-000000':
                     logger.info('submit order[{0}] success.'.format(goods_id))
                     try:
@@ -266,7 +266,10 @@ def __submit_order(token, goods_id, goods_num, proxies):
                         if not goodsMarketingMap:
                             return
 
-                        goods_info['storeId'] = goodsMarketingMap[goods_id][0]['storeId']
+                        if goods_id in goodsMarketingMap.keys():
+                            goods_info['storeId'] = goodsMarketingMap[goods_id][0]['storeId']
+                        else:
+                            goods_info['storeId'] = 123456861
 
                         discount_info_list = content_json['context']['goodsMarketingMap'][goods_id][0]['fullDiscountLevelList']
                         selected_discount_info = None
@@ -295,7 +298,7 @@ def __submit_order(token, goods_id, goods_num, proxies):
 
                         return goods_info
                     except Exception as e:
-                        logger.info('submit order[{0}] parse marketingId marketingLevelId failed: [{1}].'.format(goods_id, e))
+                        logger.info('submit order[{0}] parse marketingId marketingLevelId failed: [{1}].'.format(goods_id, content))
             return None
         except Exception as e:
             logger.info('submit order[{0}] exception: [{1}].'.format(goods_id, e))
@@ -349,7 +352,7 @@ def __confirm(token, goods_id, goods_num, goods_info, proxies):
             if response.status == 200:
                 content = response.read().decode('utf-8')
                 content_json = json.loads(content)
-                logger.info('get request content: [{0}].'.format(content_json))
+                logger.info('get request content: [{0}].'.format(content))
                 if content_json.get('code') == 'K-000000':
                     logger.info('confirm order[{0}][{1}] success.'.format(goods_id, goods_num))
                     return True
@@ -395,7 +398,7 @@ def __get_list_address(token, proxies):
             if response.status == 200:
                 content = response.read().decode('utf-8')
                 content_json = json.loads(content)
-                logger.info('get request content: [{0}].'.format(content_json))
+                logger.info('get request content: [{0}].'.format(content))
                 if content_json.get('code') == 'K-000000':
                     address_id = content_json['context'][0]['deliveryAddressId']
                 return address_id
@@ -454,7 +457,7 @@ def __commit(user, token, goods_id, goods_info, proxies, address_id):
             if response.status == 200:
                 content = response.read().decode('utf-8')
                 content_json = json.loads(content)
-                logger.info('get request content: [{0}].'.format(content_json))
+                logger.info('get request content: [{0}].'.format(content))
                 if content_json.get('code') == 'K-000000':
                     logger.info('commit order[{0}] success.'.format(goods_id))
                     return True

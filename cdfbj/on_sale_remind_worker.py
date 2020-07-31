@@ -127,7 +127,7 @@ class Worker(threading.Thread):
             smtp_port = 465                   # 固定端口
 
         i = 0
-        while i < 3:
+        while i < 2:
             try:
                 # 配置服务器
                 stmp = smtplib.SMTP_SSL(smtp_server, smtp_port)
@@ -244,8 +244,8 @@ class Worker(threading.Thread):
                                 self_send_mail_users.add(user)
 
                         for user in self_send_mail_users:
-                            if self.send_mail(goods_info, user):
-                                self.user_status_dict[user][goods_id] = True
+                            self.send_mail(goods_info, user)
+                            self.user_status_dict[user][goods_id] = True
 
                         if self.send_mail(goods_info, mail_users[0], self_sender=False):
                             mail_users = set(mail_users) - self_send_mail_users
