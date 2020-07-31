@@ -12,6 +12,7 @@ from urllib import request
 
 logger = logging.getLogger(__name__)
 secret_key_info = {}
+goods_lock_info = {}
 
 
 # step one: login, get token
@@ -271,7 +272,14 @@ def __submit_order(token, goods_id, goods_num, proxies):
                         else:
                             goods_info['storeId'] = 123456861
 
-                        discount_info_list = content_json['context']['goodsMarketingMap'][goods_id][0]['fullDiscountLevelList']
+                        if goods_id in content_json['context']['goodsMarketingMap'].keys():
+                            discount_info_list = content_json['context']['goodsMarketingMap'][goods_id][0]['fullDiscountLevelList']
+                            goods_lock_info[goods_id] = discount_info_list
+                        elif goods_id in goods_lock_info.keys():
+                            discount_info_list = goods_lock_info[goods_id]
+                        else:
+                            discount_info_list = []
+
                         selected_discount_info = None
 
                         for discount_info in discount_info_list:
