@@ -139,7 +139,8 @@ class AutoOrderReminder(object):
         if new_num <= 0:
             return
 
-        url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city=0&yys=0&port=11&pack=110169&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions=&gm=4'
+        url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city=0&yys=0&port=11&pack=110169&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=1&regions=&gm=4'
+        # url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city=0&yys=0&port=11&pack=110169&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions=&gm=4'
         # url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city=0&yys=0&port=11&pack=110082&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions=&gm=4'
         url = url.format(new_num)
 
@@ -161,7 +162,7 @@ class AutoOrderReminder(object):
     def start_to_monitor(self):
         proxy_num = self.config.get('ip_pool_num', 1)
 
-        users = [user for user in self.user_info_dict.keys()]
+        users = [user for user in self.user_info_dict.keys() if len(self.user_info_dict[user]['goods']) != 0]
         user_num = len(users)
         time_interval = 3600 / user_num
         last_time = None
