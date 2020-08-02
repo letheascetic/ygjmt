@@ -510,7 +510,7 @@ def __get_goods_info(token, goods_id, goods_num, proxies):
 def __get_address_id(user, token, proxies):
     user_key = user['email']
 
-    if secret_key_info[user_key].get('address_id', None) is None:
+    if user_key not in secret_key_info.keys() or secret_key_info[user_key].get('address_id', None) is None:
         address_id = __get_list_address(token, proxies)
         secret_key_info[user_key]['address_id'] = address_id
 
@@ -520,41 +520,59 @@ def __get_address_id(user, token, proxies):
 def lock_order(user, goods_id, proxies):
     user_key = user['email']
 
+    # 第一步，获取token
     if not __get_token(user, proxies):
         return False
 
     token = secret_key_info[user_key]['token']
     goods_num = user['goods'][goods_id][0]
 
+    # 第二步，查询购物车中数量
     num_in_cart = __query_cart(token, goods_id, proxies)
     if num_in_cart is None:
         return False
     if num_in_cart > goods_num:
+        # 第三步，从购物车删除
         if not __delete_goods_in_cart(token, goods_id, proxies):
             return False
         else:
             num_in_cart = 0
 
+    # 第三步，添加到购物车
     num_to_add = goods_num - num_in_cart
     if num_to_add != 0:
         if not __add_to_cart(token, goods_id, num_to_add, proxies):
             return False
 
+    # 第四步，确定要购买的东西
     goods_info = __get_goods_info(token, goods_id, goods_num, proxies)
     if goods_info is None:
         return False
 
+    # 第五步，下单
     if not __confirm(token, goods_id, goods_num, goods_info, proxies):
         return False
 
+    # 第六步，获取地址
     address_id = __get_address_id(user, token, proxies)
     if address_id is None:
         return False
 
+    # 第七步，提交订单
     if not __commit(user, token, goods_id, goods_info, proxies, address_id):
         return False
 
     return True
+
+
+def init_user_info(user, proxies):
+    user_key = user['email']
+
+    if not __get_token(user, proxies):
+        return
+    token = secret_key_info[user_key]['token']
+
+    __get_address_id(user, token, proxies)
 
 
 if __name__ == "__main__":

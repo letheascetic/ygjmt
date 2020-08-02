@@ -14,14 +14,14 @@ LOG_CONFIG = {
 
 ON_SALE_REMINDER_CONFIG = {
     'interval': 3,
-    'worker_num': 1,
+    'worker_num': 15,
     'ip_pool_num': 1,
-    'goods_user_file': '北京日上订阅公众号粉丝0729.xlsx',
+    'goods_user_file': '北京日上订阅公众号粉丝0801.xlsx',
     'user_status_file': 'user_status.txt',
     'mail_senders': [
-        {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},        # cdfbj_vx1
-        # {"email": 'letheascetic@163.com', 'code': 'BGDAEEMWDFDGBRVQ'},        # cdfbj_vx1
-        # {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},	    # cdfbj_vx2
+         # {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},        # cdfbj_vx1
+         # {"email": 'letheascetic@163.com', 'code': 'BGDAEEMWDFDGBRVQ'},        # cdfbj_vx1
+            {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},	    # cdfbj_vx2
         # {"email": 'cdf_bj_updater_3@163.com', 'code': 'OAJFKDISCBDVRGJE'},	    # cdfbj
     ]
 }
@@ -29,19 +29,26 @@ ON_SALE_REMINDER_CONFIG = {
 
 AUTO_ORDER_REMINDER_CONFIG = {
     'interval': 3,
-    'worker_num': 1,
+    'worker_num': 3,
     'ip_pool_num': 1,
-    'goods_user_file': '北京日上锁单商品信息0729.xlsx',
+    'goods_user_file': '北京日上锁单商品信息.xlsx',
     'user_info_file': '北京日上锁单用户信息.xlsx',
     'user_status_file': 'lock_user_status.txt',
     'mail_senders': [
-        {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},        # cdfbj_vx1
+        # {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},        # cdfbj_vx1
         # {"email": 'letheascetic@163.com', 'code': 'BGDAEEMWDFDGBRVQ'},        # cdfbj_vx1
-        # {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},	    # cdfbj_vx2
+          {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},	    # cdfbj_vx2
         # {"email": 'cdf_bj_updater_3@163.com', 'code': 'OAJFKDISCBDVRGJE'},	    # cdfbj
     ],
     'super_users': [
+        '334220735@qq.com',
+        'hjj_duiyi@163.com',
+        '185666307@qq.com',
         'cdf_bj_updater@163.com',
-        'letheascetic@163.com'
+        'letheascetic@163.com',
+        '502544609@qq.com',
+        '475453260@qq.com',
+        '346857309@qq.com',
+        '1054518030@qq.com'
     ]
 }

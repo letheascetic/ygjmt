@@ -4,9 +4,11 @@ import util
 import json
 import time
 import reader
+import random
 import logging
 import datetime
 import requests
+import auto_order
 from auto_order_remind_worker import Worker
 
 
@@ -122,12 +124,12 @@ class AutoOrderReminder(object):
         for ip_info in self.ip_pool:
             expire_time = datetime.datetime.strptime(ip_info['expire_time'], '%Y-%m-%d %H:%M:%S')
             time_rest = (expire_time - datetime.datetime.now()).total_seconds()
-            if time_rest < 60:
+            if time_rest < 30:
                 logger.info('pop time expired proxy: [{0}].'.format(ip_info))
                 self.ip_pool.remove(ip_info)
                 self.ip_pool_statistics['expired'] = self.ip_pool_statistics['expired'] + 1
                 self.ip_pool_statistics['used'] = self.ip_pool_statistics['used'] + 1
-            if ip_info.get('failed_times', 0) >= 10:
+            if ip_info.get('failed_times', 0) >= 15:
                 logger.info('pop bad proxy: [{0}].'.format(ip_info))
                 self.ip_pool.remove(ip_info)
                 self.ip_pool_statistics['bad'] = self.ip_pool_statistics['bad'] + 1
@@ -158,6 +160,12 @@ class AutoOrderReminder(object):
 
     def start_to_monitor(self):
         proxy_num = self.config.get('ip_pool_num', 1)
+
+        users = [user for user in self.user_info_dict.keys()]
+        user_num = len(users)
+        time_interval = 3600 / user_num
+        last_time = None
+        next_user_index = 0
         while True:
             try:
                 while len(self.message_queue) != 0:
@@ -165,9 +173,34 @@ class AutoOrderReminder(object):
                     if message == 'user_status_dict':
                         self.save_user_status()
                 self.update_proxies(proxy_num)
+
+                if last_time is None or (time.time() - last_time) > time_interval:
+                    user = self.user_info_dict[users[next_user_index]]
+                    self.init_lock_user_info(user)
+                    last_time = time.time()
+                    next_user_index = next_user_index + 1
+                    if next_user_index == len(users):
+                        next_user_index = 0
+
                 time.sleep(10)
             except Exception as e:
                 logger.exception('on sale reminder exception: [{0}].'.format(e))
+
+    def get_proxy(self, ip_info):
+        host = ip_info.get('ip', None)
+        port = ip_info.get('port', None)
+        proxies = {
+            'http': 'http://{0}:{1}'.format(host, port),
+            'https': 'https://{0}:{1}'.format(host, port)
+        }
+        return proxies
+
+    def init_lock_user_info(self, user):
+        logger.info('init lock user info: [{0}].'.format(user))
+        if len(self.ip_pool) != 0:
+            ip_info = random.choice(self.ip_pool)
+            proxies = self.get_proxy(ip_info)
+            auto_order.init_user_info(user, proxies)
 
     def execute(self):
         self.load_goods_user_info()     # 从excel读取用户信息和产品订阅信息
