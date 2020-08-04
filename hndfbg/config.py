@@ -15,7 +15,7 @@ LOG_CONFIG = {
 ON_SALE_REMINDER_CONFIG = {
     'interval': 3,
     'worker_num': 6,
-    'goods_user_file': '海绵补货订阅通知0801.xlsx',
+    'goods_user_file': '海绵补货订阅通知0803.xlsx',
     'user_status_file': 'user_status.txt',
     'mail_senders': [
         {"email": 'buhuoupdater@163.com', 'code': 'SKJKHLBZEBRLUVDM'},
