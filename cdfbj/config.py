@@ -13,8 +13,8 @@ LOG_CONFIG = {
 
 
 ON_SALE_REMINDER_CONFIG = {
-    'interval': 3,
-    'worker_num': 15,
+    'interval': 1,
+    'worker_num': 5,
     'ip_pool_num': 1,
     'goods_user_file': '北京日上订阅公众号粉丝0803.xlsx',
     'user_status_file': 'user_status.txt',
@@ -28,8 +28,8 @@ ON_SALE_REMINDER_CONFIG = {
 
 
 AUTO_ORDER_REMINDER_CONFIG = {
-    'interval': 3,
-    'worker_num': 3,
+    'interval': 0.1,
+    'worker_num': 1,
     'ip_pool_num': 1,
     'goods_user_file': '北京日上锁单商品信息.xlsx',
     'user_info_file': '北京日上锁单用户信息.xlsx',

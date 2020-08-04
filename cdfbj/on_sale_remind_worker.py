@@ -223,6 +223,7 @@ class Worker(threading.Thread):
 
             for goods_id in goods_ids:
                 try:
+                    time.sleep(random.random() * config.ON_SALE_REMINDER_CONFIG['interval'] * 2)
                     goods_info = self.get_goods_info(goods_id)
                     if goods_info['status'] is None:  # 访问失败或出错，直接返回
                         continue

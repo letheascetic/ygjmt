@@ -85,7 +85,7 @@ class Worker(threading.Thread):
                 time_span = time.time() - start
 
         except Exception as e:
-            logger.info('thread[{0}] get goods info[{1}] using proxy[{2}] exception.'.format(self.id, goods_id, proxies))
+            logger.info('thread[{0}] get goods info[{1}] using proxy[{2}] exception: [{3}].'.format(self.id, goods_id, proxies, e))
             ip_info['failed_times'] = ip_info['failed_times'] + 1
 
             self.request_statistics['exception'] = self.request_statistics['exception'] + 1
@@ -163,6 +163,8 @@ class Worker(threading.Thread):
 
             for goods_id in goods_ids:
                 try:
+                    # time.sleep(config.AUTO_ORDER_REMINDER_CONFIG['interval'])
+                    time.sleep(random.random() * config.AUTO_ORDER_REMINDER_CONFIG['interval'] * 2)
                     while len(self.ip_pool) == 0:
                         logger.info('ip pool is empty, waiting.')
                         time.sleep(3)
@@ -174,7 +176,7 @@ class Worker(threading.Thread):
                     if goods_info['status'] is None:  # 访问失败或出错，直接返回
                         continue
 
-                    # logger.info('goods info: [{0}].'.format(goods_info))
+                    logger.info('goods info: [{0}].'.format(goods_info))
 
                     if goods_info['status'] == '在售':
                         logger.info('goods on sale: [{0}].'.format(goods_info))
