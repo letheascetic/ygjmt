@@ -22,7 +22,7 @@ class Worker(threading.Thread):
     id = None
     m_running = True
 
-    def __init__(self, id, message_queue, goods_user_info, user_info_dict, user_status_dict, ip_pool):
+    def __init__(self, id, message_queue, goods_user_info, user_info_dict, user_status_dict, ip_pool, goods_sale_info_dict):
         threading.Thread.__init__(self)
         self.id = id
         self.m_running = True
@@ -31,6 +31,7 @@ class Worker(threading.Thread):
         self.user_status_dict = user_status_dict
         self.message_queue = message_queue
         self.ip_pool = ip_pool
+        self.goods_sale_info_dict = goods_sale_info_dict
         # self.request_statistics = {'total': 0, 'success': 0, 'failed': 0, 'exception': 0, 'total_time_span': 0, 'success_time_span': 0, 'total_avg_time': 0, 'success_avg_time': 0}
 
     def get_proxy(self, ip_info):
@@ -43,7 +44,7 @@ class Worker(threading.Thread):
         return proxies
 
     def get_goods_info(self, goods_id):
-        goods_info = {'title': None, 'url': None, 'status': None}
+        goods_info = {'title': None, 'url': None, 'status': None, 'price': None, 'discount': None}
         try:
             url = "https://m.hndfbg.com/goods/detail?goods_id={0}".format(goods_id)
             goods_info['url'] = url
@@ -53,12 +54,16 @@ class Worker(threading.Thread):
                 selector = Selector(response=r)
                 title = selector.xpath('//section[@class = "goods-title"]/div/h3/text()').extract_first()
                 status = selector.xpath('//a[@class = "btn_sold_out"]/text()').extract_first()
+                price = selector.xpath('//div[@class = "goods_contaier_base"]/section[@class = "goods-price"]/p/span/text()').extract_first()
+                discount = selector.xpath('//div[@class = "goods_contaier_base"]/section[@class = "goods-price"]/p/em/text()').extract_first()
                 if not status and title is not None:
                     goods_info['title'] = title
                     goods_info['status'] = '在售'
                 else:
                     goods_info['title'] = title
                     goods_info['status'] = '缺货'
+                goods_info['discount'] = discount
+                goods_info['price'] = price
             else:
                 logger.info('thread[{0}] request url[{1}] failed with return code: [{2}].'.format(self.id, url, r.status_code))
         except Exception as e:
@@ -66,8 +71,11 @@ class Worker(threading.Thread):
 
         return goods_info
 
-    def send_mail(self, info, user, self_sender=True):
-        goods_title = info['title']
+    def send_mail(self, info, user, self_sender=True, title=None):
+        if title is not None:
+            goods_title = title
+        else:
+            goods_title = info['title']
         content = str(info)
 
         user_email = self.user_info_dict[user]['email']
@@ -87,7 +95,7 @@ class Worker(threading.Thread):
             smtp_port = 465                   # 固定端口
 
         i = 0
-        while i < 2:
+        while i < 1:
             try:
                 # 配置服务器
                 stmp = smtplib.SMTP_SSL(smtp_server, smtp_port)
@@ -121,6 +129,21 @@ class Worker(threading.Thread):
                 update_flag = True
         return update_flag, mail_users
 
+    def update_query_goods_sale_info(self, goods_id, goods_info):
+        update_flag = False
+        mail_users = []
+        if goods_id not in self.goods_sale_info_dict.keys():
+            self.goods_sale_info_dict[goods_id] = {'price': goods_info['price'], 'discount': goods_info['discount']}
+            update_flag = True
+
+        goods_sale_info = self.goods_sale_info_dict[goods_id]
+        if goods_sale_info['price'] != goods_info['price'] or goods_sale_info['discount'] != goods_info['discount']:
+            self.goods_sale_info_dict[goods_id] = {'price': goods_info['price'], 'discount': goods_info['discount']}
+            update_flag = True
+            mail_users = self.goods_user_info.get(goods_id, [])
+
+        return update_flag, mail_users
+
     def save_user_status(self):
         goods_status_file = config.ON_SALE_REMINDER_CONFIG['goods_status_file']
         try:
@@ -151,7 +174,17 @@ class Worker(threading.Thread):
                     if goods_info['status'] == '在售':
                         logger.info('goods on sale: [{0}].'.format(goods_info))
 
-                    update_flag, mail_users = self.update_query_user_status(goods_id, goods_info)
+                    update_flag, mail_users = self.update_query_goods_sale_info(goods_id, goods_info)
+                    if update_flag:
+                        self.message_queue.add('goods_sale_info_dict')
+
+                    mail_title = None
+                    if mail_users:
+                        update_flag, _ = self.update_query_user_status(goods_id, goods_info)
+                        mail_title = '折扣/价格变化了-{0}'.format(goods_info['title'])
+                    else:
+                        update_flag, mail_users = self.update_query_user_status(goods_id, goods_info)
+
                     random.shuffle(mail_users)
 
                     if mail_users:
@@ -162,10 +195,10 @@ class Worker(threading.Thread):
                                 self_send_mail_users.add(user)
 
                         for user in self_send_mail_users:
-                            self.send_mail(goods_info, user)
+                            self.send_mail(goods_info, user, title=mail_title)
                             self.user_status_dict[user][goods_id] = True
 
-                        if self.send_mail(goods_info, mail_users[0], self_sender=False):
+                        if self.send_mail(goods_info, mail_users[0], self_sender=False, title=mail_title):
                             mail_users = set(mail_users) - self_send_mail_users
                             for user in mail_users:
                                 self.user_status_dict[user][goods_id] = True

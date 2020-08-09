@@ -129,7 +129,7 @@ class Worker(threading.Thread):
             smtp_port = 465                   # 固定端口
 
         i = 0
-        while i < 2:
+        while i < 1:
             try:
                 # 配置服务器
                 stmp = smtplib.SMTP_SSL(smtp_server, smtp_port)
