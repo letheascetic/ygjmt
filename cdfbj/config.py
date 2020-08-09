@@ -13,42 +13,46 @@ LOG_CONFIG = {
 
 
 ON_SALE_REMINDER_CONFIG = {
-    'interval': 1,
-    'worker_num': 5,
+    'interval': 0.25,
+    'worker_num': 1,
     'ip_pool_num': 1,
-    'goods_user_file': '北京日上订阅公众号粉丝0803.xlsx',
+    'goods_user_file': '北京日上订阅公众号粉丝0809.xlsx',
     'user_status_file': 'user_status.txt',
+    'goods_sale_info_file': 'goods_sale_info.txt',
     'mail_senders': [
-         # {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},        # cdfbj_vx1
+        {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},        # cdfbj_vx1
          # {"email": 'letheascetic@163.com', 'code': 'BGDAEEMWDFDGBRVQ'},        # cdfbj_vx1
-            {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},	    # cdfbj_vx2
-        # {"email": 'cdf_bj_updater_3@163.com', 'code': 'OAJFKDISCBDVRGJE'},	    # cdfbj
+        {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},	    # cdfbj_vx2
+        {"email": 'cdf_bj_updater_3@163.com', 'code': 'OAJFKDISCBDVRGJE'},	    # cdfbj
     ]
 }
 
 
 AUTO_ORDER_REMINDER_CONFIG = {
-    'interval': 0.1,
-    'worker_num': 1,
-    'ip_pool_num': 1,
+    'interval': 0.35,
+    'worker_num': 2,
+    'ip_pool_num': 2,
     'goods_user_file': '北京日上锁单商品信息.xlsx',
     'user_info_file': '北京日上锁单用户信息.xlsx',
     'user_status_file': 'lock_user_status.txt',
     'mail_senders': [
-        # {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},        # cdfbj_vx1
+        {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},        # cdfbj_vx1
         # {"email": 'letheascetic@163.com', 'code': 'BGDAEEMWDFDGBRVQ'},        # cdfbj_vx1
-          {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},	    # cdfbj_vx2
-        # {"email": 'cdf_bj_updater_3@163.com', 'code': 'OAJFKDISCBDVRGJE'},	    # cdfbj
+        {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},	    # cdfbj_vx2
+        {"email": 'cdf_bj_updater_3@163.com', 'code': 'OAJFKDISCBDVRGJE'},	    # cdfbj
     ],
     'super_users': [
-        '334220735@qq.com',
         'hjj_duiyi@163.com',
-        '185666307@qq.com',
+        'liukaixia136@163.com',
+        '334220735@qq.com',
+        'yj975005962@163.com',
+        '87845698@qq.com',
         'cdf_bj_updater@163.com',
         'letheascetic@163.com',
         '502544609@qq.com',
         '475453260@qq.com',
         '346857309@qq.com',
+        '846119389@qq.com',
         '1054518030@qq.com'
     ]
 }

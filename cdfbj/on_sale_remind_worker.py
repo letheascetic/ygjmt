@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class Worker(threading.Thread):
 
-    def __init__(self, id, message_queue, goods_user_info, user_info_dict, user_status_dict, ip_pool):
+    def __init__(self, id, message_queue, goods_user_info, user_info_dict, user_status_dict, ip_pool, goods_sale_info_dict):
         threading.Thread.__init__(self)
         self.id = id
         self.m_running = True
@@ -29,11 +29,19 @@ class Worker(threading.Thread):
         self.user_status_dict = user_status_dict
         self.message_queue = message_queue
         self.ip_pool = ip_pool
+        self.goods_sale_info_dict = goods_sale_info_dict
         self.request_statistics = {'total': 0, 'success': 0, 'failed': 0, 'exception': 0, 'total_time_span': 0, 'success_time_span': 0, 'total_avg_time': 0, 'success_avg_time': 0}
 
     def get_proxy(self, ip_info):
+        if ip_info is None:
+            return None
+
         host = ip_info.get('ip', None)
         port = ip_info.get('port', None)
+
+        if host is None or port is None:
+            return None
+
         proxies = {
             'http': 'http://{0}:{1}'.format(host, port),
             'https': 'https://{0}:{1}'.format(host, port)
@@ -41,7 +49,7 @@ class Worker(threading.Thread):
         return proxies
 
     def get_goods_info(self, goods_id):
-        goods_info = {'title': None, 'url': None, 'status': None, '库存': None}
+        goods_info = {'title': None, 'url': None, 'status': None, '库存': None, 'price': None, 'discount': None}
 
         while len(self.ip_pool) == 0:
             logger.info('ip pool is empty, waiting.')
@@ -76,6 +84,10 @@ class Worker(threading.Thread):
                     else:
                         goods_info['status'] = '缺货'
 
+                    goods_info['price'] = info['salePrice']
+                    if len(info['marketingLabels']) > 0:
+                        goods_info['discount'] = info['marketingLabels'][0]['marketingDesc']
+
                 if ip_info['failed_times'] != 0:
                     ip_info['failed_times'] = ip_info['failed_times'] - 1
 
@@ -104,11 +116,12 @@ class Worker(threading.Thread):
 
         return goods_info
 
-    def send_mail(self, info, user, self_sender=True):
-        goods_title = info['title']
+    def send_mail(self, info, user, self_sender=True, title=None):
+        if title is not None:
+            goods_title = title
+        else:
+            goods_title = info['title']
         content = str(info)
-        # content = self.make_mail_content(info, user)
-        # subject = self.make_mail_header(info, user)
 
         user_email = self.user_info_dict[user]['email']
         if self_sender and self.user_info_dict[user]['email_code'] is not None:
@@ -147,44 +160,6 @@ class Worker(threading.Thread):
                 time.sleep(2)
         return False
 
-    def make_mail_content(self, info, user):
-        user_email = self.user_info_dict[user]['email']
-
-        hello = random.choice(['hello', 'hi', '嗨', '你好', '您好', 'hey', '亲爱的', '亲', '哇', '嘿嘿', '哈哈', '恭喜', 'congratulations'])
-        name = user_email.split('@')[0]
-        str1 = random.choice(['商品', '产品', '东东', '', '货品'])
-        str2 = info['title']
-        str3 = random.choice(['有货', '上架', '补货'])
-        str4 = info['库存']
-        str5 = random.choice(['马上', '尽快', '赶紧', '加油', ' ', '请'])
-        str6 = random.choice(['下单', '购买', '支付', '查看'])
-        str7 = random.choice(['商品', '产品', '东东', '宝贝', '货品'])
-        str8 = random.choice(['Best Regards', 'Regards', 'Best wishes'])
-
-        content = """
-        {hello}，{name}：
-
-            你关注的{str1}“{str2}”{str3}了，现在还有{str4}件，{str5}去{str6}吧。
-            
-            {str7}链接：{url}
-        
-        {str8}
-        
-        阳光姐妹淘鸭！~
-        """.format(hello=hello, name=name, str1=str1, str2=str2, str3=str3,
-                   str4=str4, str5=str5, str6=str6, str7=str7, url=info['url'], str8=str8)
-
-        return content
-
-    def make_mail_header(self, info, user):
-        user_email = self.user_info_dict[user]['email']
-        name = random.choice(['hello', 'hi', '嗨', '你好', '您好', 'hey', '亲爱的', '亲', '哇', user_email.split('@')[0]])
-        company = random.choice(['北京cdf', 'cdf北京'])
-        title = info['title']
-        message = random.choice(['补货了', '有货了', '有更新了', '有存库了'])
-        header = '{name}, {company} {title} {message} '.format(name=name, company=company, title=title, message=message)
-        return header
-
     def update_query_user_status(self, goods_id, goods_info):
         update_flag = False
         stock = goods_info['库存']
@@ -201,6 +176,24 @@ class Worker(threading.Thread):
                 update_flag = True
         return update_flag, mail_users
 
+    def update_query_goods_sale_info(self, goods_id, goods_info):
+        update_flag = False
+        mail_users = []
+        if goods_info['status'] == '下架':
+            return update_flag, mail_users
+
+        if goods_id not in self.goods_sale_info_dict.keys():
+            self.goods_sale_info_dict[goods_id] = {'price': goods_info['price'], 'discount': goods_info['discount']}
+            update_flag = True
+
+        goods_sale_info = self.goods_sale_info_dict[goods_id]
+        if goods_sale_info['price'] != goods_info['price'] or goods_sale_info['discount'] != goods_info['discount']:
+            self.goods_sale_info_dict[goods_id] = {'price': goods_info['price'], 'discount': goods_info['discount']}
+            update_flag = True
+            mail_users = self.goods_user_info.get(goods_id, [])
+
+        return update_flag, mail_users
+
     def save_user_status(self):
         goods_status_file = config.ON_SALE_REMINDER_CONFIG['goods_status_file']
         try:
@@ -213,6 +206,7 @@ class Worker(threading.Thread):
 
     def run(self):
         i = 0
+        last_time = time.time()
         while self.m_running:
             i = i + 1
             current_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
@@ -233,7 +227,16 @@ class Worker(threading.Thread):
                     if goods_info['status'] == '在售':
                         logger.info('goods on sale: [{0}].'.format(goods_info))
 
-                    update_flag, mail_users = self.update_query_user_status(goods_id, goods_info)
+                    update_flag, mail_users = self.update_query_goods_sale_info(goods_id, goods_info)
+                    if update_flag:
+                        self.message_queue.add('goods_sale_info_dict')
+
+                    mail_title = None
+                    if mail_users:
+                        update_flag, _ = self.update_query_user_status(goods_id, goods_info)
+                        mail_title = '折扣/价格变化了-{0}'.format(goods_info['title'])
+                    else:
+                        update_flag, mail_users = self.update_query_user_status(goods_id, goods_info)
 
                     random.shuffle(mail_users)
 
@@ -245,10 +248,10 @@ class Worker(threading.Thread):
                                 self_send_mail_users.add(user)
 
                         for user in self_send_mail_users:
-                            self.send_mail(goods_info, user)
+                            self.send_mail(goods_info, user, title=mail_title)
                             self.user_status_dict[user][goods_id] = True
 
-                        if self.send_mail(goods_info, mail_users[0], self_sender=False):
+                        if self.send_mail(goods_info, mail_users[0], self_sender=False, title=mail_title):
                             mail_users = set(mail_users) - self_send_mail_users
                             for user in mail_users:
                                 self.user_status_dict[user][goods_id] = True
@@ -267,7 +270,9 @@ class Worker(threading.Thread):
                 except Exception as e:
                     logger.exception('process goods[{0}] exception: [{1}].'.format(goods_id, e))
 
-            logger.info('thread[{0}] request statistics: [{1}].'.format(self.id, self.request_statistics))
+            if time.time() - last_time > 600:
+                last_time = time.time()
+                logger.info('thread[{0}] request statistics: [{1}].'.format(self.id, self.request_statistics))
 
     def stop(self):
         self.m_running = False

@@ -20,7 +20,8 @@ class OnSaleReminder(object):
     goods_user_info = None      # 产品用户字典，记录产品订阅的用户
     user_info_dict = None       # 用户信息字典，包含用户名、密码、邮箱、订阅的产品及提醒阈值
     user_status_dict = None     # 用户状态字典，记录用户订阅的产品是否已经发起过提醒
-    # goods_status_dict = None    # 产品状态字典，记录产品最近的状态信息，包括产品名、链接、状态、库存
+    goods_sale_info_dict = None # 产品折扣和售价信息字典，记录产品当前的折扣和售价
+
     workers = []
     ip_pool = []
     ip_pool_statistics = {'used': 0, 'expired': 0, 'bad': 0}
@@ -47,6 +48,29 @@ class OnSaleReminder(object):
         self.save_user_status()
         logger.info('user status dict: ------------------------------------------------------------------')
         logger.info(self.user_status_dict)
+        logger.info('---------------------------------------------------------------------------------')
+
+    def load_goods_sale_info(self):
+        try:
+            f = open(self.config['goods_sale_info_file'], 'r')
+            content = f.read()
+            if not content.strip():
+                content = '{}'
+        except:
+            content = '{}'
+        self.goods_sale_info_dict = json.loads(content)
+        canceled_goods = []
+        for goods_id in self.goods_sale_info_dict.keys():
+            if goods_id not in self.goods_user_info.keys():
+                canceled_goods.append(goods_id)
+
+        for goods_id in canceled_goods:
+            logger.info('cancel old goods[{0}] sale info: [{1}].'.format(goods_id, self.goods_sale_info_dict[goods_id]))
+            self.goods_sale_info_dict.pop(goods_id)
+
+        self.save_goods_sale_info()
+        logger.info('goods sale info dict: ------------------------------------------------------------------')
+        logger.info(self.goods_sale_info_dict)
         logger.info('---------------------------------------------------------------------------------')
 
     def update_user_status(self):
@@ -107,6 +131,15 @@ class OnSaleReminder(object):
         except Exception as e:
             logger.exception('save user status to [{0}] exception: [{1}].'.format(self.config['user_status_file'], e))
 
+    def save_goods_sale_info(self):
+        try:
+            content = json.dumps(self.goods_sale_info_dict)
+            f = open(self.config['goods_sale_info_file'], 'w', encoding='utf-8')
+            f.write(content)
+            f.close()
+        except Exception as e:
+            logger.exception('save goods sale info to [{0}] exception: [{1}].'.format(self.config['goods_sale_info_file'], e))
+
     def activate_workers(self):
         worker_num = self.config.get('worker_num', 1)
         goods_per_thread = int(len(self.goods_user_info.keys()) / worker_num)
@@ -122,13 +155,15 @@ class OnSaleReminder(object):
                 continue
             elif goods_count == goods_per_thread:
                 self.workers.append(Worker(thread_id, self.message_queue, goods_user_info_slice,
-                                           self.user_info_dict, self.user_status_dict, self.ip_pool))
+                                           self.user_info_dict, self.user_status_dict, self.ip_pool,
+                                           self.goods_sale_info_dict))
                 goods_count = 0
                 thread_id = thread_id + 1
                 goods_user_info_slice = {}
 
         self.workers.append(Worker(thread_id, self.message_queue, goods_user_info_slice,
-                                   self.user_info_dict, self.user_status_dict, self.ip_pool))
+                                   self.user_info_dict, self.user_status_dict, self.ip_pool,
+                                   self.goods_sale_info_dict))
 
         for worker in self.workers:
             # logger.info('[{0}] [{1}].'.format(worker.id, len(worker.goods_user_info.keys())))
@@ -181,6 +216,8 @@ class OnSaleReminder(object):
                     message = self.message_queue.pop()
                     if message == 'user_status_dict':
                         self.save_user_status()
+                    elif message == 'goods_sale_info_dict':
+                        self.save_goods_sale_info()
                 self.update_proxies(proxy_num)
                 time.sleep(10)
             except Exception as e:
@@ -189,6 +226,7 @@ class OnSaleReminder(object):
     def execute(self):
         self.load_goods_user_info()     # 从excel读取用户信息和产品订阅信息
         self.load_user_status()         # 读取过去存储的用户字典
+        self.load_goods_sale_info()  # 读取当前产品的售价和折扣信息
         proxy_num = self.config.get('ip_pool_num', 1)
         self.update_proxies(proxy_num)
         self.activate_workers()         # 激活workers，开始监控
