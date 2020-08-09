@@ -4,6 +4,7 @@ import util
 import json
 import time
 import reader
+import random
 import logging
 import datetime
 import requests
@@ -140,30 +141,29 @@ class OnSaleReminder(object):
         except Exception as e:
             logger.exception('save goods sale info to [{0}] exception: [{1}].'.format(self.config['goods_sale_info_file'], e))
 
+    def get_random_goods_ids(self):
+        goods_ids = []
+        for goods_id in self.goods_user_info.keys():
+            user_num = len(self.goods_user_info.get(goods_id, []))
+            goods_ids.extend([goods_id] * user_num)
+        random.shuffle(goods_ids)
+        return goods_ids
+
     def activate_workers(self):
         worker_num = self.config.get('worker_num', 1)
-        goods_per_thread = int(len(self.goods_user_info.keys()) / worker_num)
+        goods_ids = self.get_random_goods_ids()
+        goods_per_thread = int(len(goods_ids) / worker_num)
 
-        goods_count = 0
-        thread_id = 1
-        goods_user_info_slice = {}
-        for goods_id in self.goods_user_info.keys():
-            goods_count = goods_count + 1
-            goods_user_info_slice[goods_id] = self.goods_user_info[goods_id]
+        for i in range(worker_num):
+            thread_id = i+1
+            if i == worker_num-1:
+                goods_ids_slice = goods_ids[i*goods_per_thread:]
+            else:
+                goods_ids_slice = goods_ids[i*goods_per_thread:(i+1)*goods_per_thread]
 
-            if thread_id == worker_num:
-                continue
-            elif goods_count == goods_per_thread:
-                self.workers.append(Worker(thread_id, self.message_queue, goods_user_info_slice,
-                                           self.user_info_dict, self.user_status_dict, self.ip_pool,
-                                           self.goods_sale_info_dict))
-                goods_count = 0
-                thread_id = thread_id + 1
-                goods_user_info_slice = {}
-
-        self.workers.append(Worker(thread_id, self.message_queue, goods_user_info_slice,
-                                   self.user_info_dict, self.user_status_dict, self.ip_pool,
-                                   self.goods_sale_info_dict))
+            self.workers.append(Worker(thread_id, self.message_queue, self.goods_user_info,
+                                       self.user_info_dict, self.user_status_dict, self.ip_pool,
+                                       self.goods_sale_info_dict, goods_ids_slice))
 
         for worker in self.workers:
             # logger.info('[{0}] [{1}].'.format(worker.id, len(worker.goods_user_info.keys())))

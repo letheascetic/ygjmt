@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class Worker(threading.Thread):
 
-    def __init__(self, id, message_queue, goods_user_info, user_info_dict, user_status_dict, ip_pool, goods_sale_info_dict):
+    def __init__(self, id, message_queue, goods_user_info, user_info_dict, user_status_dict, ip_pool, goods_sale_info_dict, goods_ids):
         threading.Thread.__init__(self)
         self.id = id
         self.m_running = True
@@ -30,6 +30,7 @@ class Worker(threading.Thread):
         self.message_queue = message_queue
         self.ip_pool = ip_pool
         self.goods_sale_info_dict = goods_sale_info_dict
+        self.goods_ids = goods_ids
         self.request_statistics = {'total': 0, 'success': 0, 'failed': 0, 'exception': 0, 'total_time_span': 0, 'success_time_span': 0, 'total_avg_time': 0, 'success_avg_time': 0}
 
     def get_proxy(self, ip_info):
@@ -212,20 +213,18 @@ class Worker(threading.Thread):
             current_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
             logger.info('thread[{0}] [{1}], start [{2}] times........................'.format(self.id, current_time, i))
 
-            goods_ids = list(self.goods_user_info.keys())
-            random.shuffle(goods_ids)
-
-            for goods_id in goods_ids:
+            random.shuffle(self.goods_ids)
+            for goods_id in self.goods_ids:
                 try:
                     time.sleep(random.random() * config.ON_SALE_REMINDER_CONFIG['interval'] * 2)
                     goods_info = self.get_goods_info(goods_id)
                     if goods_info['status'] is None:  # 访问失败或出错，直接返回
                         continue
 
-                    # logger.info('goods info: [{0}].'.format(goods_info))
+                    logger.info('goods info: [{0}].'.format(goods_info))
 
-                    if goods_info['status'] == '在售':
-                        logger.info('goods on sale: [{0}].'.format(goods_info))
+                    # if goods_info['status'] == '在售':
+                    #     logger.info('goods on sale: [{0}].'.format(goods_info))
 
                     update_flag, mail_users = self.update_query_goods_sale_info(goods_id, goods_info)
                     if update_flag:
