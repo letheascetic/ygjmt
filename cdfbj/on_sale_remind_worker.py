@@ -117,7 +117,7 @@ class Worker(threading.Thread):
 
         return goods_info
 
-    def send_mail(self, info, user, self_sender=True, title=None):
+    def send_mail(self, info, user, self_sender=True, title=None, sys_mail=False):
         if title is not None:
             goods_title = title
         else:
@@ -128,6 +128,10 @@ class Worker(threading.Thread):
         if self_sender and self.user_info_dict[user]['email_code'] is not None:
             from_addr, code = user_email, self.user_info_dict[user]['email_code']
             to_addrs = [user_email]
+        elif sys_mail is True:
+            sender = random.choice(config.ON_SALE_REMINDER_CONFIG['sys_mail_senders'])
+            from_addr, code = sender['email'], sender['code']
+            to_addrs = [from_addr]
         else:
             sender = random.choice(config.ON_SALE_REMINDER_CONFIG['mail_senders'])
             from_addr, code = sender['email'], sender['code']
@@ -254,6 +258,9 @@ class Worker(threading.Thread):
                             mail_users = set(mail_users) - self_send_mail_users
                             for user in mail_users:
                                 self.user_status_dict[user][goods_id] = True
+
+                        if goods_info['库存'] >= config.ON_SALE_REMINDER_CONFIG['sys_mail_threshold'] or '折扣/价格变化了' in mail_title:
+                            self.send_mail(goods_info, mail_users[0], self_sender=False, title=mail_title, sys_mail=True)
 
                     # for user in mail_users:
                     #     logger.info('goods[{0}] send mail to [{1}].'.format(goods_info, self.user_info_dict[user]))

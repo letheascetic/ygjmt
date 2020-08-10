@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class Worker(threading.Thread):
 
-    def __init__(self, id, message_queue, goods_user_info, user_info_dict, user_status_dict, ip_pool):
+    def __init__(self, id, message_queue, goods_user_info, user_info_dict, user_status_dict, ip_pool, goods_ids):
         threading.Thread.__init__(self)
         self.id = id
         self.m_running = True
@@ -30,6 +30,7 @@ class Worker(threading.Thread):
         self.user_status_dict = user_status_dict
         self.message_queue = message_queue
         self.ip_pool = ip_pool
+        self.goods_ids = goods_ids
         self.request_statistics = {'total': 0, 'success': 0, 'failed': 0, 'exception': 0, 'total_time_span': 0, 'success_time_span': 0, 'total_avg_time': 0, 'success_avg_time': 0}
 
     def get_proxy(self, ip_info):
@@ -42,7 +43,7 @@ class Worker(threading.Thread):
         return proxies
 
     def get_goods_info(self, goods_id, ip_info, proxies):
-        goods_info = {'title': None, 'url': None, 'status': None, '库存': None}
+        goods_info = {'title': None, 'url': None, 'status': None, '库存': None, 'price': None, 'discount': None}
         start = time.time()
         try:
             url = "https://mbff.yuegowu.com/goods/unLogin/spu/{0}?regId={1}".format(goods_id, uuid.uuid4())
@@ -68,6 +69,10 @@ class Worker(threading.Thread):
                         goods_info['status'] = '在售'
                     else:
                         goods_info['status'] = '缺货'
+
+                    goods_info['price'] = info['salePrice']
+                    if len(info['marketingLabels']) > 0:
+                        goods_info['discount'] = info['marketingLabels'][0]['marketingDesc']
 
                 if ip_info['failed_times'] != 0:
                     ip_info['failed_times'] = ip_info['failed_times'] - 1
@@ -158,10 +163,8 @@ class Worker(threading.Thread):
             current_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
             logger.info('thread[{0}] [{1}], start [{2}] times........................'.format(self.id, current_time, i))
 
-            goods_ids = list(self.goods_user_info.keys())
-            random.shuffle(goods_ids)
-
-            for goods_id in goods_ids:
+            random.shuffle(self.goods_ids)
+            for goods_id in self.goods_ids:
                 try:
                     # time.sleep(config.AUTO_ORDER_REMINDER_CONFIG['interval'])
                     time.sleep(random.random() * config.AUTO_ORDER_REMINDER_CONFIG['interval'] * 2)
@@ -176,13 +179,22 @@ class Worker(threading.Thread):
                     if goods_info['status'] is None:  # 访问失败或出错，直接返回
                         continue
 
-                    logger.info('goods info: [{0}].'.format(goods_info))
+                    # logger.info('goods info: [{0}].'.format(goods_info))
 
                     if goods_info['status'] == '在售':
                         logger.info('goods on sale: [{0}].'.format(goods_info))
 
                     mail_users = self.query_user_status(goods_id, goods_info)
 
+                    # 没有要锁单的用户，且当前库存数不为0，则把产品添加到想要锁单这个产品的用户购物车中
+                    if len(mail_users) == 0 and goods_info['库存'] > 0:
+                        users = self.goods_user_info.get(goods_id, [])
+                        random.shuffle(users)
+                        for user in users:
+                            logger.info('add goods[{0}] to user[{1}] cart.'.format(goods_info, user))
+                            auto_order.add_cart(self.user_info_dict[user], goods_id, proxies, goods_info['库存'])
+
+                    # 有要锁单的用户，则开启锁单
                     while len(mail_users) != 0:
                         user = None
                         for super_user in config.AUTO_ORDER_REMINDER_CONFIG['super_users']:

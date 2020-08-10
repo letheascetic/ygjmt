@@ -517,6 +517,23 @@ def __get_address_id(user, token, proxies):
     return secret_key_info[user_key].get('address_id', None)
 
 
+def __query_cart_info(user, token, goods_id, proxies):
+    user_key = user['email']
+    if user_key not in secret_key_info.keys() or secret_key_info[user_key].get(goods_id, None) is None:
+        num_in_cart = __query_cart(token, goods_id, proxies)
+        if num_in_cart is not None:
+            secret_key_info[user_key][goods_id] = num_in_cart
+
+    return secret_key_info[user_key].get(goods_id, None)
+
+
+def __update_cart_info(user, token, goods_id, proxies):
+    user_key = user['email']
+    num_in_cart = __query_cart(token, goods_id, proxies)
+    if num_in_cart is not None:
+        secret_key_info[user_key][goods_id] = num_in_cart
+
+
 def lock_order(user, goods_id, proxies):
     user_key = user['email']
 
@@ -528,7 +545,7 @@ def lock_order(user, goods_id, proxies):
     goods_num = user['goods'][goods_id][0]
 
     # 第二步，查询购物车中数量
-    num_in_cart = __query_cart(token, goods_id, proxies)
+    num_in_cart = __query_cart_info(user, token, goods_id, proxies)
     if num_in_cart is None:
         return False
     if num_in_cart > goods_num:
@@ -537,12 +554,14 @@ def lock_order(user, goods_id, proxies):
             return False
         else:
             num_in_cart = 0
+            secret_key_info[user_key][goods_id] = num_in_cart
 
     # 第三步，添加到购物车
     num_to_add = goods_num - num_in_cart
     if num_to_add != 0:
         if not __add_to_cart(token, goods_id, num_to_add, proxies):
             return False
+    secret_key_info[user_key][goods_id] = goods_num
 
     # 第四步，确定要购买的东西
     goods_info = __get_goods_info(token, goods_id, goods_num, proxies)
@@ -562,6 +581,38 @@ def lock_order(user, goods_id, proxies):
     if not __commit(user, token, goods_id, goods_info, proxies, address_id):
         return False
 
+    secret_key_info[user_key][goods_id] = 0
+    return True
+
+
+def add_cart(user, goods_id, proxies, stock):
+    user_key = user['email']
+
+    if not __get_token(user, proxies):
+        return False
+
+    token = secret_key_info[user_key]['token']
+    goods_num = user['goods'][goods_id][0]
+
+    num_in_cart = __query_cart_info(user, token, goods_id, proxies)
+    if num_in_cart is None:
+        return False
+    if num_in_cart > goods_num:
+        if not __delete_goods_in_cart(token, goods_id, proxies):
+            return False
+        else:
+            num_in_cart = 0
+            secret_key_info[user_key][goods_id] = num_in_cart
+
+    num_to_add = goods_num - num_in_cart
+    if num_to_add == 0:
+        return True
+    if num_to_add > stock:
+        num_to_add = stock
+
+    if not __add_to_cart(token, goods_id, num_to_add, proxies):
+        return False
+    secret_key_info[user_key][goods_id] = num_in_cart + num_to_add
     return True
 
 
@@ -573,6 +624,9 @@ def init_user_info(user, proxies):
     token = secret_key_info[user_key]['token']
 
     __get_address_id(user, token, proxies)
+
+    for goods_id in user['goods'].keys():
+        __update_cart_info(user, token, goods_id, proxies)
 
 
 if __name__ == "__main__":
@@ -589,17 +643,18 @@ if __name__ == "__main__":
             'seat': 'L48',
             'arrive_time': '2017-05-01 12:00:00',
             'passport': 'G50442496',
-            'goods': {'2c9194587219d0ae017219dc906503b6': 7, }
+            'goods': {'2c9194597219d0ad017219dc906f03bf': [7, 2]}
             }
 
-    goods_id = '2c9194587219d0ae017219dc906503b6'
+    goods_id = '2c9194597219d0ad017219dc906f03bf'
 
     host = '58.218.92.196'
-    port = '8802'
+    port = '6095'
     proxies = {
         'http': 'http://{0}:{1}'.format(host, port),
         'https': 'https://{0}:{1}'.format(host, port)
     }
 
-    lock_order(user, goods_id, proxies)
+    init_user_info(user, proxies)
+    # lock_order(user, goods_id, proxies)
     pass
