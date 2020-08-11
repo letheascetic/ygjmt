@@ -15,7 +15,7 @@ LOG_CONFIG = {
 ON_SALE_REMINDER_CONFIG = {
     'interval': 1,
     'worker_num': 3,
-    'goods_user_file': '海绵补货订阅通知0809.xlsx',
+    'goods_user_file': '海绵补货订阅通知0811.xlsx',
     'user_status_file': 'user_status.txt',
     'goods_sale_info_file': 'goods_sale_info.txt',
     'mail_senders': [
