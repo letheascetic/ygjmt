@@ -259,7 +259,7 @@ class Worker(threading.Thread):
                             for user in mail_users:
                                 self.user_status_dict[user][goods_id] = True
 
-                        if goods_info['库存'] >= config.ON_SALE_REMINDER_CONFIG['sys_mail_threshold'] or '折扣/价格变化了' in mail_title:
+                        if goods_info['库存'] >= config.ON_SALE_REMINDER_CONFIG['sys_mail_threshold'] or mail_title is not None:
                             self.send_mail(goods_info, mail_users[0], self_sender=False, title=mail_title, sys_mail=True)
 
                     # for user in mail_users:
