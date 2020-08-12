@@ -114,6 +114,11 @@ class AutoOrderReminder(object):
             worker.start()
 
     def update_proxies(self, num):
+        if not self.config.get('use_proxy', False):
+            if len(self.ip_pool) == 0:
+                self.ip_pool.append({'ip': None, 'host': None})
+            return
+
         for ip_info in self.ip_pool:
             expire_time = datetime.datetime.strptime(ip_info['expire_time'], '%Y-%m-%d %H:%M:%S')
             time_rest = (expire_time - datetime.datetime.now()).total_seconds()
@@ -195,6 +200,8 @@ class AutoOrderReminder(object):
     def get_proxy(self, ip_info):
         host = ip_info.get('ip', None)
         port = ip_info.get('port', None)
+        if host is None or port is None:
+            return None
         proxies = {
             'http': 'http://{0}:{1}'.format(host, port),
             'https': 'https://{0}:{1}'.format(host, port)

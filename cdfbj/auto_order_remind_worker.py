@@ -36,6 +36,8 @@ class Worker(threading.Thread):
     def get_proxy(self, ip_info):
         host = ip_info.get('ip', None)
         port = ip_info.get('port', None)
+        if host is None or port is None:
+            return None
         proxies = {
             'http': 'http://{0}:{1}'.format(host, port),
             'https': 'https://{0}:{1}'.format(host, port)
