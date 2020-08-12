@@ -14,9 +14,9 @@ LOG_CONFIG = {
 
 ON_SALE_REMINDER_CONFIG = {
     'interval': 0.25,
-    'worker_num': 1,
-    'ip_pool_num': 1,
-    'goods_user_file': '北京日上订阅公众号粉丝0811.xlsx',
+    'worker_num': 3,
+    'ip_pool_num': 3,
+    'goods_user_file': '北京日上订阅公众号粉丝0812.xlsx',
     'user_status_file': 'user_status.txt',
     'goods_sale_info_file': 'goods_sale_info.txt',
     'sys_mail_threshold': 50,

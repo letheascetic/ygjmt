@@ -648,13 +648,15 @@ if __name__ == "__main__":
 
     goods_id = '2c9194597219d0ad017219dc906f03bf'
 
-    host = '58.218.92.196'
-    port = '6095'
-    proxies = {
-        'http': 'http://{0}:{1}'.format(host, port),
-        'https': 'https://{0}:{1}'.format(host, port)
-    }
+    # host = '58.218.92.196'
+    # port = '6095'
+    # proxies = {
+    #     'http': 'http://{0}:{1}'.format(host, port),
+    #     'https': 'https://{0}:{1}'.format(host, port)
+    # }
+
+    proxies = None
 
     init_user_info(user, proxies)
-    # lock_order(user, goods_id, proxies)
+    lock_order(user, goods_id, proxies)
     pass

@@ -255,8 +255,8 @@ class Worker(threading.Thread):
                             self.user_status_dict[user][goods_id] = True
 
                         if self.send_mail(goods_info, mail_users[0], self_sender=False, title=mail_title):
-                            mail_users = set(mail_users) - self_send_mail_users
-                            for user in mail_users:
+                            rest_mail_users = set(mail_users) - self_send_mail_users
+                            for user in rest_mail_users:
                                 self.user_status_dict[user][goods_id] = True
 
                         if goods_info['库存'] >= config.ON_SALE_REMINDER_CONFIG['sys_mail_threshold'] or mail_title is not None:
