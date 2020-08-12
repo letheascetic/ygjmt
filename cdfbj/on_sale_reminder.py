@@ -170,6 +170,11 @@ class OnSaleReminder(object):
             worker.start()
 
     def update_proxies(self, num):
+        if not self.config.get('use_proxy', False):
+            if len(self.ip_pool) == 0:
+                self.ip_pool.append({'ip': None, 'host': None, 'failed_times': 0})
+            return
+
         for ip_info in self.ip_pool:
             expire_time = datetime.datetime.strptime(ip_info['expire_time'], '%Y-%m-%d %H:%M:%S')
             time_rest = (expire_time - datetime.datetime.now()).total_seconds()

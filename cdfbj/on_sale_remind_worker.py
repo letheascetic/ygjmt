@@ -34,9 +34,6 @@ class Worker(threading.Thread):
         self.request_statistics = {'total': 0, 'success': 0, 'failed': 0, 'exception': 0, 'total_time_span': 0, 'success_time_span': 0, 'total_avg_time': 0, 'success_avg_time': 0}
 
     def get_proxy(self, ip_info):
-        if ip_info is None:
-            return None
-
         host = ip_info.get('ip', None)
         port = ip_info.get('port', None)
 

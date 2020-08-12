@@ -116,7 +116,7 @@ class AutoOrderReminder(object):
     def update_proxies(self, num):
         if not self.config.get('use_proxy', False):
             if len(self.ip_pool) == 0:
-                self.ip_pool.append({'ip': None, 'host': None})
+                self.ip_pool.append({'ip': None, 'host': None, 'failed_times': 0})
             return
 
         for ip_info in self.ip_pool:
