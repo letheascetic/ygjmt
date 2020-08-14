@@ -59,9 +59,12 @@ class Worker(threading.Thread):
                 if not status and title is not None:
                     goods_info['title'] = title
                     goods_info['status'] = '在售'
-                else:
+                elif status and title is not None:
+                    goods_info['status'] = status
                     goods_info['title'] = title
-                    goods_info['status'] = '缺货'
+                else:
+                    goods_info['title'] = None
+                    goods_info['status'] = None
                 goods_info['discount'] = discount
                 goods_info['price'] = price
             else:
