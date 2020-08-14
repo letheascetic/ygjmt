@@ -127,7 +127,7 @@ class Worker(threading.Thread):
                 mail_users.append(user)
                 update_flag = True
             # 缺货且已通知，则变更为待通知状态
-            elif goods_info['status'] == '缺货' and self.user_status_dict[user][goods_id] is True:
+            elif goods_info['status'] != '在售' and self.user_status_dict[user][goods_id] is True:
                 self.user_status_dict[user][goods_id] = False
                 update_flag = True
         return update_flag, mail_users
