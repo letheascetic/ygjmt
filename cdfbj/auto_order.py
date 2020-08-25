@@ -648,8 +648,8 @@ if __name__ == "__main__":
 
     goods_id = '2c9194597219d0ad017219dc906f03bf'
 
-    host = '171.112.94.126'
-    port = '4278'
+    host = '123.186.228.228'
+    port = '4223'
     proxies = {
         'http': 'http://{0}:{1}'.format(host, port),
         'https': 'https://{0}:{1}'.format(host, port)

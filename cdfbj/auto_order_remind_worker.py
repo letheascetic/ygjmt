@@ -186,6 +186,9 @@ class Worker(threading.Thread):
                     if goods_info['status'] == '在售':
                         logger.info('goods on sale: [{0}].'.format(goods_info))
 
+                    if config.AUTO_ORDER_REMINDER_CONFIG['auto_order_use_proxy'] is False:
+                        proxies = None
+
                     mail_users = self.query_user_status(goods_id, goods_info)
 
                     # 没有要锁单的用户，且当前库存数不为0，则把产品添加到想要锁单这个产品的用户购物车中

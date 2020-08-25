@@ -38,6 +38,7 @@ AUTO_ORDER_REMINDER_CONFIG = {
     'worker_num': 2,
     'ip_pool_num': 3,
     'use_proxy': True,
+    'auto_order_use_proxy': False,
     'goods_user_file': '北京日上锁单商品信息.xlsx',
     'user_info_file': '北京日上锁单用户信息.xlsx',
     'user_status_file': 'lock_user_status.txt',
