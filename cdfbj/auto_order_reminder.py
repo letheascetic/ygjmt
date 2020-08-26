@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 class AutoOrderReminder(object):
-    config = None
     message_queue = None
     goods_user_info = None      # 产品用户字典，记录产品订阅的用户
     user_info_dict = None       # 用户信息字典，包含用户名、密码、邮箱、订阅的产品及提醒阈值
@@ -210,7 +209,10 @@ class AutoOrderReminder(object):
 
     def init_lock_user_info(self, user):
         logger.info('init lock user info: [{0}].'.format(user))
-        if len(self.ip_pool) != 0:
+        if not self.config.get('auto_order_use_proxy', True):   # 自助下单，默认使用代理IP
+            proxies = None
+            auto_order.init_user_info(user, proxies)
+        elif len(self.ip_pool) != 0:
             ip_info = random.choice(self.ip_pool)
             proxies = self.get_proxy(ip_info)
             auto_order.init_user_info(user, proxies)
