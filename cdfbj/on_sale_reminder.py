@@ -6,8 +6,12 @@ import time
 import reader
 import random
 import logging
+import smtplib
 import datetime
 import requests
+from email.header import Header
+from email.utils import formataddr
+from email.mime.text import MIMEText
 from on_sale_remind_worker import Worker
 
 
@@ -25,7 +29,8 @@ class OnSaleReminder(object):
 
     workers = []
     ip_pool = []
-    ip_pool_statistics = {'used': 0, 'expired': 0, 'bad': 0}
+    ip_alert = False
+    ip_pool_statistics = {'used': 0, 'expired': 0, 'bad': 0, 'recent': []}
 
     def __init__(self, config):
         self.config = config
@@ -183,19 +188,34 @@ class OnSaleReminder(object):
                 self.ip_pool.remove(ip_info)
                 self.ip_pool_statistics['expired'] = self.ip_pool_statistics['expired'] + 1
                 self.ip_pool_statistics['used'] = self.ip_pool_statistics['used'] + 1
-            if ip_info.get('failed_times', 0) >= 15:
+                self.ip_pool_statistics['recent'].append((ip_info, 'expired'))
+            if ip_info.get('failed_times', 0) >= 30:
                 logger.info('pop bad proxy: [{0}].'.format(ip_info))
                 self.ip_pool.remove(ip_info)
                 self.ip_pool_statistics['bad'] = self.ip_pool_statistics['bad'] + 1
                 self.ip_pool_statistics['used'] = self.ip_pool_statistics['used'] + 1
+                self.ip_pool_statistics['recent'].append((ip_info, 'bad'))
+
+        if len(self.ip_pool_statistics['recent']) > 30:
+            while len(self.ip_pool_statistics['recent']) > 30:
+                self.ip_pool_statistics['recent'].pop(0)
+
+            bad_num = len([x for x in self.ip_pool_statistics['recent'] if x[-1] == 'bad'])
+            bad_num_ratio = bad_num / len(self.ip_pool_statistics['recent'])
+            logger.info('bad ip proxy ratio: [{0}].'.format(bad_num_ratio))
+
+            if bad_num_ratio > 0.75 and not self.ip_alert:
+                if self.send_alert_mail(self.ip_pool_statistics['recent']):
+                    self.ip_alert = True
+
+        if self.ip_alert:
+            return
 
         new_num = num - len(self.ip_pool)
         if new_num <= 0:
             return
 
-        url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city=0&yys=0&port=11&pack=110169&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=1&regions=&gm=4'
-        # url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city=0&yys=0&port=11&pack=110169&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions=&gm=4'
-        # url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city=0&yys=0&port=11&pack=110169&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions=&gm=4'
+        url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city=0&yys=0&port=11&pack=110169&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions=&gm=4'
         url = url.format(new_num)
 
         try:
@@ -212,6 +232,45 @@ class OnSaleReminder(object):
             logger.exception('get proxies exception: [{0}].'.format(e))
 
         logger.info('ip pool statistics: [{0}].'.format(self.ip_pool_statistics))
+
+    def send_alert_mail(self, info):
+        if config.ON_SALE_REMINDER_CONFIG.get('sys_mail_senders', None):
+            sender = random.choice(config.ON_SALE_REMINDER_CONFIG['sys_mail_senders'])
+        else:
+            sender = random.choice(config.ON_SALE_REMINDER_CONFIG['mail_senders'])
+
+        from_addr, code = sender['email'], sender['code']
+        to_addrs = [from_addr]
+
+        content = str(info)
+
+        if '163.com' in from_addr:
+            smtp_server = 'smtp.163.com'      # 固定写死
+            smtp_port = 465                   # 固定端口
+        else:
+            smtp_server = 'smtp.qq.com'      # 固定写死
+            smtp_port = 465                   # 固定端口
+
+        i = 0
+        while i < 1:
+            try:
+                # 配置服务器
+                stmp = smtplib.SMTP_SSL(smtp_server, smtp_port)
+                stmp.login(from_addr, code)
+                # 组装发送内容
+                message = MIMEText(content, 'plain')  # 发送的内容
+                message['From'] = formataddr(["阳光姐妹淘鸭", from_addr])
+                message['To'] = ','.join(to_addrs)        # 收件人
+                # message['Cc'] = from_addr
+                subject = '报警提醒：坏的IP代理太多.'
+                message['Subject'] = Header(subject)  # 邮件标题
+                stmp.sendmail(from_addr, to_addrs, message.as_string())
+                return True
+            except Exception as e:
+                i = i + 1
+                logger.exception('thread[{0}] send alert mail[{1}] failed; [{2}].'.format(self.id, info, e))
+                time.sleep(2)
+        return False
 
     def start_to_monitor(self):
         proxy_num = self.config.get('ip_pool_num', 1)
@@ -244,5 +303,6 @@ if __name__ == '__main__':
 
     import config
     reminder = OnSaleReminder(config.ON_SALE_REMINDER_CONFIG)
+    # reminder.send_alert_mail('测试程序1')
     reminder.execute()
     pass
