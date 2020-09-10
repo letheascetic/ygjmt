@@ -79,7 +79,9 @@ class Worker(threading.Thread):
             goods_title = title
         else:
             goods_title = info['title']
-        content = str(info)
+
+        content = {'商品': info['title'], '状态': info['status'], '价格': info['price'], '折扣': info['discount'], '链接': info['url']}
+        content = str(content)
 
         user_email = self.user_info_dict[user]['email']
         if self_sender and self.user_info_dict[user]['email_code'] is not None:

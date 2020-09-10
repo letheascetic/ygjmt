@@ -89,7 +89,7 @@ class Worker(threading.Thread):
                 if ip_info['failed_times'] != 0:
                     ip_info['failed_times'] = ip_info['failed_times'] - 1
 
-                self.request_statistics['success'] = self.request_statistics['success'] + 1
+                self.request_stsatistics['success'] = self.request_statistics['success'] + 1
                 time_span = time.time() - start
                 self.request_statistics['success_time_span'] = self.request_statistics['success_time_span'] + time_span
                 self.request_statistics['success_avg_time'] = self.request_statistics['success_time_span'] / self.request_statistics['success']
@@ -119,7 +119,10 @@ class Worker(threading.Thread):
             goods_title = title
         else:
             goods_title = info['title']
-        content = str(info)
+
+        content = {'商品': info['title'], '状态': info['status'], '库存': info['库存'],
+                   '价格': info['price'], '折扣': info['discount'], '链接': info['url']}
+        content = str(content)
 
         user_email = self.user_info_dict[user]['email']
         if self_sender and self.user_info_dict[user]['email_code'] is not None:

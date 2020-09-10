@@ -17,7 +17,7 @@ ON_SALE_REMINDER_CONFIG = {
     'worker_num': 3,
     'ip_pool_num': 3,
     'use_proxy': True,
-    'goods_user_file': '北京日上订阅公众号粉丝0831.xlsx',
+    'goods_user_file': '北京日上订阅公众号粉丝0909.xlsx',
     'user_status_file': 'user_status.txt',
     'goods_sale_info_file': 'goods_sale_info.txt',
     'sys_mail_threshold': 50,
@@ -29,6 +29,7 @@ ON_SALE_REMINDER_CONFIG = {
         # {"email": 'letheascetic@163.com', 'code': 'BGDAEEMWDFDGBRVQ'},        # cdfbj_vx1
         {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},	    # cdfbj_vx2
         {"email": 'cdf_bj_updater_3@163.com', 'code': 'OAJFKDISCBDVRGJE'},	    # cdfbj
+        {"email": 'cdf_bj_updater_4@163.com', 'code': 'SJPLBCHBKHIIQCLF'},	    # cdfbj_4
     ]
 }
 
@@ -38,7 +39,7 @@ AUTO_ORDER_REMINDER_CONFIG = {
     'worker_num': 2,
     'ip_pool_num': 3,
     'use_proxy': True,
-    'auto_order_use_proxy': False,
+    'auto_order_use_proxy': True,
     'goods_user_file': '北京日上锁单商品信息.xlsx',
     'user_info_file': '北京日上锁单用户信息.xlsx',
     'user_status_file': 'lock_user_status.txt',
