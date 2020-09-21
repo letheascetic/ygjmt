@@ -13,14 +13,15 @@ LOG_CONFIG = {
 
 
 ON_SALE_REMINDER_CONFIG = {
-    'interval': 0.25,
-    'worker_num': 3,
-    'ip_pool_num': 3,
+    'interval': 0.5,
+    'worker_num': 1,
+    'ip_pool_num': 1,
     'use_proxy': True,
-    'goods_user_file': '北京日上订阅公众号粉丝0827.xlsx',
+    'goods_file': '管理员权限北京日上订阅.xlsx',
+    'users_file': '管理员权限北京日上订阅用户.xlsx',
     'user_status_file': 'user_status.txt',
     'goods_sale_info_file': 'goods_sale_info.txt',
-    'sys_mail_threshold': 50,
+    'goods_stock_threshold': 50,
     'sys_mail_senders': [
         {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},
     ],
@@ -34,22 +35,4 @@ ON_SALE_REMINDER_CONFIG = {
 }
 
 
-AUTO_ORDER_REMINDER_CONFIG = {
-    'interval': 0.25,
-    'worker_num': 2,
-    'ip_pool_num': 3,
-    'use_proxy': True,
-    'auto_order_use_proxy': True,
-    'goods_user_file': '北京日上锁单商品信息.xlsx',
-    'user_info_file': '北京日上锁单用户信息.xlsx',
-    'user_status_file': 'lock_user_status.txt',
-    'mail_senders': [
-        {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},        # cdfbj_vx1
-        # {"email": 'letheascetic@163.com', 'code': 'BGDAEEMWDFDGBRVQ'},        # cdfbj_vx1
-        # {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},	    # cdfbj_vx2
-        # {"email": 'cdf_bj_updater_3@163.com', 'code': 'OAJFKDISCBDVRGJE'},	    # cdfbj
-    ],
-    'super_users': [
 
-    ]
-}

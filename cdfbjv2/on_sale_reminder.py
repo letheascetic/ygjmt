@@ -22,8 +22,8 @@ class OnSaleReminder(object):
 
     config = None
     message_queue = None
-    goods_user_info = None      # 产品用户字典，记录产品订阅的用户
-    user_info_dict = None       # 用户信息字典，包含用户名、密码、邮箱、订阅的产品及提醒阈值
+    goods_list = None
+    user_info_dict = None            # 用户信息字典，包含用户名、密码、邮箱、订阅的产品及提醒阈值
     user_status_dict = None     # 用户状态字典，记录用户订阅的产品是否已经发起过提醒
     goods_sale_info_dict = None # 产品折扣和售价信息字典，记录产品当前的折扣和售价
 
@@ -37,12 +37,13 @@ class OnSaleReminder(object):
         self.message_queue = set()
         pass
 
-    def load_goods_user_info(self):
-        filename = self.config['goods_user_file']
-        self.goods_user_info, self.user_info_dict = reader.load_goods_user_info_v3(filename)
+    def load_goods_list(self):
+        filename = self.config['goods_file']
+        self.goods_list = reader.load_goods_list(filename)
 
-    def load_sys_goods_user_info(self):
-        pass
+    def load_user_info_dict(self):
+        filename = self.config['users_file']
+        self.user_info_dict = reader.load_user_info_dict(filename)
 
     def load_user_status(self):
         try:
@@ -68,9 +69,10 @@ class OnSaleReminder(object):
         except:
             content = '{}'
         self.goods_sale_info_dict = json.loads(content)
+
         canceled_goods = []
         for goods_id in self.goods_sale_info_dict.keys():
-            if goods_id not in self.goods_user_info.keys():
+            if goods_id not in self.goods_list:
                 canceled_goods.append(goods_id)
 
         for goods_id in canceled_goods:
@@ -84,11 +86,11 @@ class OnSaleReminder(object):
 
     def update_user_status(self):
         # 将新增的订阅者和订阅者新增的产品订阅添加到用户状态字典中
-        for user, info in self.user_info_dict.items():
+        for user in self.user_info_dict.keys():
             if user not in self.user_status_dict.keys():
                 self.user_status_dict[user] = {}
                 logger.info('new on sale remind user[{0}].'.format(user))
-            for goods_id in info.get('goods', {}).keys():
+            for goods_id in self.goods_list:
                 if goods_id not in self.user_status_dict[user].keys():
                     self.user_status_dict[user][goods_id] = False
                     logger.info('new on sale remind goods[{0}] for user[{1}].'.format(goods_id, user))
@@ -99,13 +101,11 @@ class OnSaleReminder(object):
         for user, status in self.user_status_dict.items():
             if user not in self.user_info_dict.keys():
                 canceled_users.append(user)
-                # self.user_status_dict.pop(user)
                 logger.info('cancel on sale remind user[{0}].'.format(user))
                 continue
             for goods_id in status.keys():
-                if goods_id not in self.user_info_dict[user]['goods'].keys():
+                if goods_id not in self.goods_list:
                     canceled_good_ids.append((user, goods_id))
-                    # self.user_status_dict[user].pop(goods_id)
                     logger.info('cancel on sale remind goods[{0}] for user[{1}].'.format(goods_id, user))
 
         for user in canceled_users:
@@ -149,17 +149,9 @@ class OnSaleReminder(object):
         except Exception as e:
             logger.exception('save goods sale info to [{0}] exception: [{1}].'.format(self.config['goods_sale_info_file'], e))
 
-    def get_random_goods_ids(self):
-        goods_ids = []
-        for goods_id in self.goods_user_info.keys():
-            user_num = len(self.goods_user_info.get(goods_id, []))
-            goods_ids.extend([goods_id] * user_num)
-        random.shuffle(goods_ids)
-        return goods_ids
-
     def activate_workers(self):
         worker_num = self.config.get('worker_num', 1)
-        goods_ids = self.get_random_goods_ids()
+        goods_ids = self.goods_list
         goods_per_thread = int(len(goods_ids) / worker_num)
 
         for i in range(worker_num):
@@ -169,12 +161,11 @@ class OnSaleReminder(object):
             else:
                 goods_ids_slice = goods_ids[i*goods_per_thread:(i+1)*goods_per_thread]
 
-            self.workers.append(Worker(thread_id, self.message_queue, self.goods_user_info,
+            self.workers.append(Worker(thread_id, self.message_queue,
                                        self.user_info_dict, self.user_status_dict, self.ip_pool,
                                        self.goods_sale_info_dict, goods_ids_slice))
 
         for worker in self.workers:
-            # logger.info('[{0}] [{1}].'.format(worker.id, len(worker.goods_user_info.keys())))
             worker.start()
 
     def update_proxies(self, num):
@@ -291,9 +282,10 @@ class OnSaleReminder(object):
                 logger.exception('on sale reminder exception: [{0}].'.format(e))
 
     def execute(self):
-        self.load_goods_user_info()     # 从excel读取用户信息和产品订阅信息
-        self.load_user_status()         # 读取过去存储的用户字典
-        self.load_goods_sale_info()  # 读取当前产品的售价和折扣信息
+        self.load_goods_list()          # 从excel产品订阅信息
+        self.load_user_info_dict()      # 读取用户邮箱和授权码
+        self.load_user_status()         # 读取过去存储的用户字典并更新
+        self.load_goods_sale_info()     # 读取当前产品的售价和折扣信息
         proxy_num = self.config.get('ip_pool_num', 1)
         self.update_proxies(proxy_num)
         self.activate_workers()         # 激活workers，开始监控
@@ -306,6 +298,5 @@ if __name__ == '__main__':
 
     import config
     reminder = OnSaleReminder(config.ON_SALE_REMINDER_CONFIG)
-    # reminder.send_alert_mail('测试程序1')
     reminder.execute()
     pass
