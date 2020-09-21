@@ -13,11 +13,11 @@ LOG_CONFIG = {
 
 
 ON_SALE_REMINDER_CONFIG = {
-    'interval': 0.25,
-    'worker_num': 3,
-    'ip_pool_num': 3,
+    'interval': 0.4,
+    'worker_num': 2,
+    'ip_pool_num': 2,
     'use_proxy': True,
-    'goods_user_file': '北京日上订阅公众号粉丝0827.xlsx',
+    'goods_user_file': '北京日上订阅公众号粉丝0921.xlsx',
     'user_status_file': 'user_status.txt',
     'goods_sale_info_file': 'goods_sale_info.txt',
     'sys_mail_threshold': 50,
@@ -37,9 +37,9 @@ ON_SALE_REMINDER_CONFIG = {
 AUTO_ORDER_REMINDER_CONFIG = {
     'interval': 0.25,
     'worker_num': 2,
-    'ip_pool_num': 3,
+    'ip_pool_num': 2,
     'use_proxy': True,
-    'auto_order_use_proxy': True,
+    'auto_order_use_proxy': False,
     'goods_user_file': '北京日上锁单商品信息.xlsx',
     'user_info_file': '北京日上锁单用户信息.xlsx',
     'user_status_file': 'lock_user_status.txt',
@@ -50,6 +50,6 @@ AUTO_ORDER_REMINDER_CONFIG = {
         # {"email": 'cdf_bj_updater_3@163.com', 'code': 'OAJFKDISCBDVRGJE'},	    # cdfbj
     ],
     'super_users': [
-
+     'cdf_bj_updater_2@163.com'
     ]
 }
