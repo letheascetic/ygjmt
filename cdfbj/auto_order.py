@@ -447,10 +447,10 @@ def __commit(user, token, goods_id, goods_info, proxies, address_id):
                  "specialInvoiceAddress": False, "invoiceAddressId": address_id,
                  "invoiceAddressDetail": address, "invoiceAddressUpdateTime": None,
                  "invoiceProjectId": "", "invoiceProjectName": "", "invoiceProjectUpdateTime": None, "buyerRemark": "",
-                 "encloses": "", "deliverWay": "1"}], "commonCodeId": None, "orderSource": "WECHAT",
+                 "encloses": "", "deliverWay": "1"}], "commonCodeId": None, "orderSource": "LITTLEPROGRAM",
             "forceCommit": False, "shareUserId": None, "flightNumber": flight, "arriveTime": arrive_time,
             "seatNumber": seat, "certificateType": 0, "passport": passport, "hongkongAndMacaoPass": "",
-            "taiwanPass": ""}
+            "taiwanPass": "", "taiwanPassName":""}
     data_json = json.dumps(data)
 
     handler = request.ProxyHandler(proxies)
@@ -643,10 +643,10 @@ if __name__ == "__main__":
             'seat': 'L48',
             'arrive_time': '2017-05-01 12:00:00',
             'passport': 'G50442496',
-            'goods': {'2c9194597219d0ad017219dc906f03bf': [7, 2]}
+            'goods': {'2c9194597219d0ad017219dc93570618': [2, 2]}
             }
 
-    goods_id = '2c9194597219d0ad017219dc906f03bf'
+    goods_id = '2c9194597219d0ad017219dc93570618'
 
     host = '123.186.228.228'
     port = '4223'
@@ -655,7 +655,7 @@ if __name__ == "__main__":
         'https': 'https://{0}:{1}'.format(host, port)
     }
 
-    # proxies = None
+    proxies = None
 
     init_user_info(user, proxies)
     lock_order(user, goods_id, proxies)
