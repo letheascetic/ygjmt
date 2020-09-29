@@ -53,7 +53,14 @@ class Worker(threading.Thread):
                       'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_2_6 like Mac OS X) AppleWebKit/604.5.6 (KHTML, like Gecko) Mobile/15D100 MicroMessenger/7.0.13(0x17000d2a) NetType/WIFI Language/zh_CN',
                       'Content-Type': 'application/json'}
 
-            r = requests.get(url, timeout=5, headers=header, proxies=proxies)
+            header2 = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
+                       'Accept-Encoding': 'gzip, deflate, br', 'Accept-Language': 'zh-CN,zh;q=0.9',
+                       'Cache-Control': 'max-age=0', 'Host': 'mbff.yuegowu.com',
+                       'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'none',
+                       'Sec-Fetch-User': '?1', 'Upgrade-Insecure-Requests': '1',
+                       'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Mobile Safari/537.36'}
+
+            r = requests.get(url, timeout=5, headers=header2, proxies=proxies)
 
             goods_info['url'] = header['Referer']
 
