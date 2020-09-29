@@ -3,6 +3,7 @@
 import uuid
 import time
 import json
+import jpype
 import config
 import random
 import requests
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class Worker(threading.Thread):
 
-    def __init__(self, id, message_queue, user_info_dict, user_status_dict, ip_pool, goods_sale_info_dict, goods_ids):
+    def __init__(self, id, message_queue, user_info_dict, user_status_dict, ip_pool, goods_sale_info_dict, goods_ids, http_util):
         threading.Thread.__init__(self)
         self.id = id
         self.m_running = True
@@ -31,6 +32,7 @@ class Worker(threading.Thread):
         self.goods_sale_info_dict = goods_sale_info_dict
         self.goods_ids = goods_ids
         self.request_statistics = {'total': 0, 'success': 0, 'failed': 0, 'exception': 0, 'total_time_span': 0, 'success_time_span': 0, 'total_avg_time': 0, 'success_avg_time': 0}
+        self.http_util = http_util
 
     def get_proxy(self, ip_info):
         host = ip_info.get('ip', None)
@@ -44,6 +46,69 @@ class Worker(threading.Thread):
             'https': 'https://{0}:{1}'.format(host, port)
         }
         return proxies
+
+    def get_goods_info_with_http_util(self, goods_id):
+        goods_info = {'title': None, 'url': None, 'status': None, 'stock': None, 'price': None, 'discount': None}
+
+        while len(self.ip_pool) == 0:
+            logger.info('ip pool is empty, waiting.')
+            time.sleep(10)
+
+        ip_info = random.choice(self.ip_pool)
+        host = ip_info.get('ip', None)
+        port = ip_info.get('port', None)
+
+        start = time.time()
+        try:
+            url = "https://mbff.yuegowu.com/goods/unLogin/spu/{0}?regId={1}".format(goods_id, uuid.uuid4())
+            goods_info['url'] = 'https://m.yuegowu.com/goods-detail/{0}'.format(goods_id)
+
+            response = self.http_util.doGet(url, None, host, port)
+            try:
+                content = json.loads(str(response))
+                context = content['context']
+                if context is None:
+                    goods_info['status'] = '下架'
+                    goods_info['stock'] = 0
+                else:
+                    info = context['goodsInfos'][0]
+                    goods_info['stock'] = info['stock']
+                    goods_info['title'] = info['goodsInfoName']
+                    if goods_info['stock'] > 0:
+                        goods_info['status'] = '在售'
+                    else:
+                        goods_info['status'] = '缺货'
+
+                    goods_info['price'] = info['salePrice']
+                    if len(info['marketingLabels']) > 0:
+                        goods_info['discount'] = info['marketingLabels'][0]['marketingDesc']
+
+                if ip_info['failed_times'] != 0:
+                    ip_info['failed_times'] = ip_info['failed_times'] - 1
+
+                self.request_statistics['success'] = self.request_statistics['success'] + 1
+                time_span = time.time() - start
+                self.request_statistics['success_time_span'] = self.request_statistics['success_time_span'] + time_span
+                self.request_statistics['success_avg_time'] = self.request_statistics['success_time_span'] / self.request_statistics['success']
+            except Exception as e:
+                logger.info('thread[{0}] request url[{1}] using proxy[{2}:{3}] failed with return code: [{4}].'.format(self.id, goods_id, host, port, e))
+                ip_info['failed_times'] = ip_info['failed_times'] + 1
+
+                self.request_statistics['failed'] = self.request_statistics['failed'] + 1
+                time_span = time.time() - start
+
+        except Exception as e:
+            logger.info('thread[{0}] get goods info[{1}] using proxy[{2}:{3}] exception.'.format(self.id, goods_id, host, port))
+            ip_info['failed_times'] = ip_info['failed_times'] + 1
+
+            self.request_statistics['exception'] = self.request_statistics['exception'] + 1
+            time_span = time.time() - start
+
+        self.request_statistics['total'] = self.request_statistics['total'] + 1
+        self.request_statistics['total_time_span'] = self.request_statistics['total_time_span'] + time_span
+        self.request_statistics['total_avg_time'] = self.request_statistics['total_time_span'] / self.request_statistics['total']
+
+        return goods_info
 
     def get_goods_info(self, goods_id):
         goods_info = {'title': None, 'url': None, 'status': None, 'stock': None, 'price': None, 'discount': None}
@@ -205,7 +270,9 @@ class Worker(threading.Thread):
             for goods_id in self.goods_ids:
                 try:
                     time.sleep(random.random() * config.ON_SALE_REMINDER_CONFIG['interval'] * 2)
-                    goods_info = self.get_goods_info(goods_id)
+                    # goods_info = self.get_goods_info(goods_id)
+                    goods_info = self.get_goods_info_with_http_util(goods_id)
+
                     if goods_info['status'] is None:  # 访问失败或出错，直接返回
                         continue
 

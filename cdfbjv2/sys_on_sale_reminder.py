@@ -3,6 +3,7 @@
 import util
 import json
 import time
+import jpype
 import reader
 import random
 import logging
@@ -35,6 +36,11 @@ class OnSaleReminder(object):
     def __init__(self, config):
         self.config = config
         self.message_queue = set()
+
+        jvmPath = jpype.getDefaultJVMPath()
+        jarPath = 'HttpUtil.jar'
+        jpype.startJVM(jvmPath, "-Djava.class.path={0}".format(jarPath))
+        self.HttpClientUtil = jpype.JClass('com.fizzy.sistertao.utils.HttpClientUtil')
         pass
 
     def load_goods_list(self):
@@ -163,7 +169,7 @@ class OnSaleReminder(object):
 
             self.workers.append(Worker(thread_id, self.message_queue,
                                        self.user_info_dict, self.user_status_dict, self.ip_pool,
-                                       self.goods_sale_info_dict, goods_ids_slice))
+                                       self.goods_sale_info_dict, goods_ids_slice, self.HttpClientUtil))
 
         for worker in self.workers:
             worker.start()
