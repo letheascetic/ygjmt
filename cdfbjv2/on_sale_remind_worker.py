@@ -3,7 +3,6 @@
 import uuid
 import time
 import json
-import jpype
 import config
 import random
 import requests
@@ -90,15 +89,15 @@ class Worker(threading.Thread):
                 time_span = time.time() - start
                 self.request_statistics['success_time_span'] = self.request_statistics['success_time_span'] + time_span
                 self.request_statistics['success_avg_time'] = self.request_statistics['success_time_span'] / self.request_statistics['success']
-            except Exception as e:
-                logger.info('thread[{0}] request url[{1}] using proxy[{2}:{3}] failed with return code: [{4}].'.format(self.id, goods_id, host, port, e))
-                ip_info['failed_times'] = ip_info['failed_times'] + 1
+            except:
+                # logger.info('thread[{0}] request url[{1}] using proxy[{2}:{3}] failed with return code: [{4}].'.format(self.id, goods_id, host, port, e))
+                # ip_info['failed_times'] = ip_info['failed_times'] + 1
 
-                self.request_statistics['failed'] = self.request_statistics['failed'] + 1
+                # self.request_statistics['failed'] = self.request_statistics['failed'] + 1
                 time_span = time.time() - start
 
         except Exception as e:
-            logger.info('thread[{0}] get goods info[{1}] using proxy[{2}:{3}] exception.'.format(self.id, goods_id, host, port))
+            logger.info('thread[{0}] get goods info[{1}] using proxy[{2}:{3}] exception[{4}].'.format(self.id, goods_id, host, port, e))
             ip_info['failed_times'] = ip_info['failed_times'] + 1
 
             self.request_statistics['exception'] = self.request_statistics['exception'] + 1
