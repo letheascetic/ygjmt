@@ -3,6 +3,7 @@
 import util
 import json
 import time
+import jpype
 import reader
 import random
 import logging
@@ -35,6 +36,11 @@ class OnSaleReminder(object):
     def __init__(self, config):
         self.config = config
         self.message_queue = set()
+
+        jvmPath = jpype.getDefaultJVMPath()
+        jarPath = 'HttpUtil.jar'
+        jpype.startJVM(jvmPath, "-Djava.class.path={0}".format(jarPath))
+        self.HttpClientUtil = jpype.JClass('com.fizzy.sistertao.utils.HttpClientUtil')
         pass
 
     def load_goods_user_info(self):
@@ -171,7 +177,7 @@ class OnSaleReminder(object):
 
             self.workers.append(Worker(thread_id, self.message_queue, self.goods_user_info,
                                        self.user_info_dict, self.user_status_dict, self.ip_pool,
-                                       self.goods_sale_info_dict, goods_ids_slice))
+                                       self.goods_sale_info_dict, goods_ids_slice, self.HttpClientUtil))
 
         for worker in self.workers:
             # logger.info('[{0}] [{1}].'.format(worker.id, len(worker.goods_user_info.keys())))
@@ -186,7 +192,7 @@ class OnSaleReminder(object):
         for ip_info in self.ip_pool:
             expire_time = datetime.datetime.strptime(ip_info['expire_time'], '%Y-%m-%d %H:%M:%S')
             time_rest = (expire_time - datetime.datetime.now()).total_seconds()
-            if time_rest < 30:
+            if time_rest < 60:
                 logger.info('pop time expired proxy: [{0}].'.format(ip_info))
                 self.ip_pool.remove(ip_info)
                 self.ip_pool_statistics['expired'] = self.ip_pool_statistics['expired'] + 1

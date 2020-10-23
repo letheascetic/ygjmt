@@ -38,9 +38,11 @@ class OnSaleReminder(object):
         self.message_queue = set()
 
         jvmPath = jpype.getDefaultJVMPath()
-        jarPath = 'HttpUtil.jar'
+        # jvmPath = 'E:\\Java\\jdk-12.0.1\\bin\\server\\jvm.dll'
+        # jarPath = 'HttpUtil.jar'
+        jarPath = 'demo12345.jar'
         jpype.startJVM(jvmPath, "-Djava.class.path={0}".format(jarPath))
-        self.HttpClientUtil = jpype.JClass('com.fizzy.sistertao.utils.HttpClientUtil')
+        self.HttpClientUtil = jpype.JClass('com.fizzy.sistertao.utils.OkHttpUtil')
         pass
 
     def load_goods_list(self):

@@ -62,7 +62,7 @@ class Worker(threading.Thread):
             url = "https://mbff.yuegowu.com/goods/unLogin/spu/{0}?regId={1}".format(goods_id, uuid.uuid4())
             goods_info['url'] = 'https://m.yuegowu.com/goods-detail/{0}'.format(goods_id)
 
-            response = self.http_util.doGet(url, None, host, port)
+            response = self.http_util.getGoodsInfo(url, host, port)
             try:
                 content = json.loads(str(response))
                 context = content['context']
