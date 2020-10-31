@@ -3,6 +3,7 @@
 import util
 import json
 import time
+import jpype
 import reader
 import random
 import smtplib
@@ -33,6 +34,11 @@ class AutoOrderReminder(object):
     def __init__(self, config):
         self.config = config
         self.message_queue = set()
+
+        jvmPath = jpype.getDefaultJVMPath()
+        jarPath = 'demo12345.jar'
+        jpype.startJVM(jvmPath, "-Djava.class.path={0}".format(jarPath))
+        self.HttpClientUtil = jpype.JClass('com.fizzy.sistertao.utils.OkHttpUtil')
         pass
 
     def load_goods_user_info(self):
@@ -111,7 +117,7 @@ class AutoOrderReminder(object):
 
             self.workers.append(Worker(thread_id, self.message_queue, self.goods_user_info,
                                        self.user_info_dict, self.user_status_dict, self.ip_pool,
-                                       goods_ids_slice))
+                                       goods_ids_slice, self.HttpClientUtil))
 
         for worker in self.workers:
             # logger.info('[{0}] [{1}].'.format(worker.id, len(worker.goods_user_info.keys())))

@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class Worker(threading.Thread):
 
-    def __init__(self, id, message_queue, goods_user_info, user_info_dict, user_status_dict, ip_pool, goods_ids):
+    def __init__(self, id, message_queue, goods_user_info, user_info_dict, user_status_dict, ip_pool, goods_ids, http_util):
         threading.Thread.__init__(self)
         self.id = id
         self.m_running = True
@@ -32,49 +32,38 @@ class Worker(threading.Thread):
         self.ip_pool = ip_pool
         self.goods_ids = goods_ids
         self.request_statistics = {'total': 0, 'success': 0, 'failed': 0, 'exception': 0, 'total_time_span': 0, 'success_time_span': 0, 'total_avg_time': 0, 'success_avg_time': 0}
+        self.http_util = http_util
 
     def get_proxy(self, ip_info):
         host = ip_info.get('ip', None)
         port = ip_info.get('port', None)
         if host is None or port is None:
-            return None
-        proxies = {
-            'http': 'http://{0}:{1}'.format(host, port),
-            'https': 'https://{0}:{1}'.format(host, port)
-        }
-        return proxies
+            return None, None
+        return host, port
 
-    def get_goods_info(self, goods_id, ip_info, proxies):
-        goods_info = {'title': None, 'url': None, 'status': None, '库存': None, 'price': None, 'discount': None}
+    def get_goods_info_with_http_util(self, goods_id, host, port):
+        goods_info = {'title': None, 'url': None, 'status': None, 'stock': None, 'price': None, 'discount': None}
+        if not host:
+            host = ''
+            port = 8888
+
         start = time.time()
         try:
             url = "https://mbff.yuegowu.com/goods/unLogin/spu/{0}?regId={1}".format(goods_id, uuid.uuid4())
-            header = {'Host': 'mbff.yuegowu.com', 'Referer': 'https://m.yuegowu.com/goods-detail/{0}'.format(goods_id),
-                      'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_2_6 like Mac OS X) AppleWebKit/604.5.6 (KHTML, like Gecko) Mobile/15D100 MicroMessenger/7.0.13(0x17000d2a) NetType/WIFI Language/zh_CN',
-                      'Content-Type': 'application/json'}
+            goods_info['url'] = 'https://m.yuegowu.com/goods-detail/{0}'.format(goods_id)
 
-            header2 = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
-                       'Accept-Encoding': 'gzip, deflate, br', 'Accept-Language': 'zh-CN,zh;q=0.9',
-                       'Cache-Control': 'max-age=0', 'Host': 'mbff.yuegowu.com',
-                       'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'none',
-                       'Sec-Fetch-User': '?1', 'Upgrade-Insecure-Requests': '1',
-                       'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Mobile Safari/537.36'}
-
-            r = requests.get(url, timeout=5, headers=header2, proxies=proxies)
-
-            goods_info['url'] = header['Referer']
-
-            if r.status_code == requests.codes.ok:
-                content = json.loads(r.text)
+            response = self.http_util.getGoodsInfo(url, host, port)
+            try:
+                content = json.loads(str(response))
                 context = content['context']
                 if context is None:
                     goods_info['status'] = '下架'
-                    goods_info['库存'] = 0
+                    goods_info['stock'] = 0
                 else:
                     info = context['goodsInfos'][0]
-                    goods_info['库存'] = info['stock']
+                    goods_info['stock'] = info['stock']
                     goods_info['title'] = info['goodsInfoName']
-                    if goods_info['库存'] > 0:
+                    if goods_info['stock'] > 0:
                         goods_info['status'] = '在售'
                     else:
                         goods_info['status'] = '缺货'
@@ -90,16 +79,15 @@ class Worker(threading.Thread):
                 time_span = time.time() - start
                 self.request_statistics['success_time_span'] = self.request_statistics['success_time_span'] + time_span
                 self.request_statistics['success_avg_time'] = self.request_statistics['success_time_span'] / self.request_statistics['success']
+            except:
+                # logger.info('thread[{0}] request url[{1}] using proxy[{2}:{3}] failed with return code: [{4}].'.format(self.id, goods_id, host, port, e))
+                # ip_info['failed_times'] = ip_info['failed_times'] + 1
 
-            else:
-                logger.info('thread[{0}] request url[{1}] using proxy[{2}] failed with return code: [{3}].'.format(self.id, url, proxies, r.status_code))
-                ip_info['failed_times'] = ip_info['failed_times'] + 1
-
-                self.request_statistics['failed'] = self.request_statistics['failed'] + 1
+                # self.request_statistics['failed'] = self.request_statistics['failed'] + 1
                 time_span = time.time() - start
 
         except Exception as e:
-            logger.info('thread[{0}] get goods info[{1}] using proxy[{2}] exception: [{3}].'.format(self.id, goods_id, proxies, e))
+            logger.info('thread[{0}] get goods info[{1}] using proxy[{2}:{3}] exception[{4}].'.format(self.id, goods_id, host, port, e))
             ip_info['failed_times'] = ip_info['failed_times'] + 1
 
             self.request_statistics['exception'] = self.request_statistics['exception'] + 1
@@ -182,9 +170,9 @@ class Worker(threading.Thread):
                         time.sleep(3)
 
                     ip_info = random.choice(self.ip_pool)
-                    proxies = self.get_proxy(ip_info)
+                    host, port = self.get_proxy(ip_info)
 
-                    goods_info = self.get_goods_info(goods_id, ip_info, proxies)
+                    goods_info = self.get_goods_info_with_http_util(goods_id, host, port)
                     if goods_info['status'] is None:  # 访问失败或出错，直接返回
                         continue
 
@@ -194,7 +182,7 @@ class Worker(threading.Thread):
                         logger.info('goods on sale: [{0}].'.format(goods_info))
 
                     if config.AUTO_ORDER_REMINDER_CONFIG['auto_order_use_proxy'] is False:
-                        proxies = None
+                        host, port = None, 8888
 
                     mail_users = self.query_user_status(goods_id, goods_info)
 
@@ -204,7 +192,7 @@ class Worker(threading.Thread):
                         random.shuffle(users)
                         for user in users:
                             logger.info('add goods[{0}] to user[{1}] cart.'.format(goods_info, user))
-                            auto_order.add_cart(self.user_info_dict[user], goods_id, proxies, goods_info['库存'])
+                            auto_order.add_cart(self.user_info_dict[user], goods_id, host, port, goods_info['库存'])
 
                     # 有要锁单的用户，则开启锁单
                     while len(mail_users) != 0:
@@ -217,7 +205,7 @@ class Worker(threading.Thread):
                         if user is None:
                             user = random.choice(mail_users)
 
-                        if auto_order.lock_order(self.user_info_dict[user], goods_id, proxies):
+                        if auto_order.lock_order(self.user_info_dict[user], goods_id, host, port):
                             logger.info('[{0}] auto order [{1}] success.'.format(user, goods_info))
                             self.user_status_dict[user][goods_id] = self.user_status_dict[user][goods_id] - 1
                             self.send_mail(goods_info, user)
@@ -230,9 +218,9 @@ class Worker(threading.Thread):
                             time.sleep(3)
 
                         ip_info = random.choice(self.ip_pool)
-                        proxies = self.get_proxy(ip_info)
+                        host, port = self.get_proxy(ip_info)
 
-                        goods_info = self.get_goods_info(goods_id, ip_info, proxies)
+                        goods_info = self.get_goods_info_with_http_util(goods_id, host, port)
                         if goods_info['status'] is None:  # 访问失败或出错，直接返回
                             break
 

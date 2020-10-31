@@ -54,8 +54,8 @@ class Worker(threading.Thread):
             time.sleep(10)
 
         ip_info = random.choice(self.ip_pool)
-        host = ip_info.get('ip', None)
-        port = ip_info.get('port', None)
+        host = ip_info.get('ip', '')
+        port = ip_info.get('port', -1)
 
         start = time.time()
         try:
