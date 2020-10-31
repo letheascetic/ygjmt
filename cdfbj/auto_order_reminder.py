@@ -37,7 +37,7 @@ class AutoOrderReminder(object):
 
         jvmPath = jpype.getDefaultJVMPath()
         jarPath = 'demo12345.jar'
-        jpype.startJVM(jvmPath, "-Djava.class.path={0}".format(jarPath))
+        # jpype.startJVM(jvmPath, "-Djava.class.path={0}".format(jarPath))
         self.HttpClientUtil = jpype.JClass('com.fizzy.sistertao.utils.OkHttpUtil')
         pass
 
@@ -267,22 +267,18 @@ class AutoOrderReminder(object):
         host = ip_info.get('ip', None)
         port = ip_info.get('port', None)
         if host is None or port is None:
-            return None
-        proxies = {
-            'http': 'http://{0}:{1}'.format(host, port),
-            'https': 'https://{0}:{1}'.format(host, port)
-        }
-        return proxies
+            return None, 8888
+        return host, port
 
     def init_lock_user_info(self, user):
         logger.info('init lock user info: [{0}].'.format(user))
         if not self.config.get('auto_order_use_proxy', True):   # 自助下单，默认使用代理IP
-            proxies = None
-            auto_order.init_user_info(user, proxies)
+            host, port = None, 8888
+            auto_order.init_user_info(user, host, port)
         elif len(self.ip_pool) != 0:
             ip_info = random.choice(self.ip_pool)
-            proxies = self.get_proxy(ip_info)
-            auto_order.init_user_info(user, proxies)
+            host, port = self.get_proxy(ip_info)
+            auto_order.init_user_info(user, host, port)
 
     def execute(self):
         self.load_goods_user_info()     # 从excel读取用户信息和产品订阅信息

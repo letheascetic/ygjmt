@@ -5,7 +5,6 @@ import time
 import json
 import config
 import random
-import requests
 import smtplib
 import logging
 import threading
@@ -72,9 +71,6 @@ class Worker(threading.Thread):
                     if len(info['marketingLabels']) > 0:
                         goods_info['discount'] = info['marketingLabels'][0]['marketingDesc']
 
-                if ip_info['failed_times'] != 0:
-                    ip_info['failed_times'] = ip_info['failed_times'] - 1
-
                 self.request_statistics['success'] = self.request_statistics['success'] + 1
                 time_span = time.time() - start
                 self.request_statistics['success_time_span'] = self.request_statistics['success_time_span'] + time_span
@@ -88,7 +84,6 @@ class Worker(threading.Thread):
 
         except Exception as e:
             logger.info('thread[{0}] get goods info[{1}] using proxy[{2}:{3}] exception[{4}].'.format(self.id, goods_id, host, port, e))
-            ip_info['failed_times'] = ip_info['failed_times'] + 1
 
             self.request_statistics['exception'] = self.request_statistics['exception'] + 1
             time_span = time.time() - start
@@ -100,7 +95,7 @@ class Worker(threading.Thread):
         return goods_info
 
     def query_user_status(self, goods_id, goods_info):
-        stock = goods_info['库存']
+        stock = goods_info['stock']
         users = self.goods_user_info.get(goods_id, [])
         mail_users = []
         for user in users:
@@ -187,12 +182,12 @@ class Worker(threading.Thread):
                     mail_users = self.query_user_status(goods_id, goods_info)
 
                     # 没有要锁单的用户，且当前库存数不为0，则把产品添加到想要锁单这个产品的用户购物车中
-                    if len(mail_users) == 0 and goods_info['库存'] > 0:
+                    if len(mail_users) == 0 and goods_info['stock'] > 0:
                         users = self.goods_user_info.get(goods_id, [])
                         random.shuffle(users)
                         for user in users:
                             logger.info('add goods[{0}] to user[{1}] cart.'.format(goods_info, user))
-                            auto_order.add_cart(self.user_info_dict[user], goods_id, host, port, goods_info['库存'])
+                            auto_order.add_cart(self.user_info_dict[user], goods_id, host, port, goods_info['stock'])
 
                     # 有要锁单的用户，则开启锁单
                     while len(mail_users) != 0:
