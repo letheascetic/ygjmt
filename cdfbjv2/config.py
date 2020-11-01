@@ -14,8 +14,8 @@ LOG_CONFIG = {
 
 ON_SALE_REMINDER_CONFIG = {
     'interval': 0.3,
-    'worker_num': 12,
-    'ip_pool_num': 12,
+    'worker_num': 8,
+    'ip_pool_num': 8,
     'use_proxy': True,
     'goods_file': '管理员权限北京日上订阅.xlsx',
     'users_file': '管理员权限北京日上订阅用户.xlsx',
