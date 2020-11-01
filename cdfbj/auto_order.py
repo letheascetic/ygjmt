@@ -543,7 +543,7 @@ if __name__ == "__main__":
     host = '110.90.175.241'
     port = 4235
 
-    # host = None
+    host = None
 
     # init_user_info(user, host, port)
     lock_order(user, goods_id, host, port)

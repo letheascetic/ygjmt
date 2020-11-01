@@ -35,9 +35,9 @@ ON_SALE_REMINDER_CONFIG = {
 
 
 AUTO_ORDER_REMINDER_CONFIG = {
-    'interval': 0.4,
-    'worker_num': 1,
-    'ip_pool_num': 2,
+    'interval': 0.3,
+    'worker_num': 4,
+    'ip_pool_num': 8,
     'use_proxy': True,
     'auto_order_use_proxy': False,
     'goods_user_file': '北京日上锁单商品信息.xlsx',

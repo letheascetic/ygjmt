@@ -171,10 +171,10 @@ class Worker(threading.Thread):
                     if goods_info['status'] is None:  # 访问失败或出错，直接返回
                         continue
 
-                    # logger.info('goods info: [{0}].'.format(goods_info))
+                    logger.info('goods info: [{0}].'.format(goods_info))
 
-                    if goods_info['status'] == '在售':
-                        logger.info('goods on sale: [{0}].'.format(goods_info))
+                    # if goods_info['status'] == '在售':
+                    #     logger.info('goods on sale: [{0}].'.format(goods_info))
 
                     if config.AUTO_ORDER_REMINDER_CONFIG['auto_order_use_proxy'] is False:
                         host, port = None, 8888
