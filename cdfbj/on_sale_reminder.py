@@ -299,7 +299,7 @@ class OnSaleReminder(object):
     def execute(self):
         self.load_goods_user_info()     # 从excel读取用户信息和产品订阅信息
         self.load_user_status()         # 读取过去存储的用户字典
-        self.load_goods_sale_info()  # 读取当前产品的售价和折扣信息
+        self.load_goods_sale_info()     # 读取当前产品的售价和折扣信息
         proxy_num = self.config.get('ip_pool_num', 1)
         self.update_proxies(proxy_num)
         self.activate_workers()         # 激活workers，开始监控

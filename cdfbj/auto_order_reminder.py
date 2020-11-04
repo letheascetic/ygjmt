@@ -254,6 +254,7 @@ class AutoOrderReminder(object):
                 if last_time is None or (time.time() - last_time) > time_interval:
                     user = self.user_info_dict[users[next_user_index]]
                     self.init_lock_user_info(user)
+                    auto_order.save_goods_lock_info()
                     last_time = time.time()
                     next_user_index = next_user_index + 1
                     if next_user_index == len(users):
@@ -281,6 +282,7 @@ class AutoOrderReminder(object):
             auto_order.init_user_info(user, host, port)
 
     def execute(self):
+        auto_order.load_goods_lock_info()
         self.load_goods_user_info()     # 从excel读取用户信息和产品订阅信息
         self.load_user_status()         # 读取过去存储的用户字典
         proxy_num = self.config.get('ip_pool_num', 1)

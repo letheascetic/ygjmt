@@ -7,7 +7,7 @@ import json
 import jpype
 import base64
 import logging
-from urllib import request
+
 
 jvmPath = jpype.getDefaultJVMPath()
 jarPath = 'demo12345.jar'
@@ -59,7 +59,7 @@ def __login(user, proxyHost, proxyPort):
             logger.info('[{0}] login exception: [{1}].'.format(user_name, e))
 
 
-# step two query cart
+# step two query cart & update goods lock info(discount info)
 def __query_cart(token, goods_id, host, port):
     url = 'https://mbff.yuegowu.com/site/purchases?regId={0}'.format(uuid.uuid4())
     if not host:
@@ -68,7 +68,7 @@ def __query_cart(token, goods_id, host, port):
     data = {"goodsInfoIds": []}
     data_json = json.dumps(data)
 
-    buy_count = None
+    cart_status = {}
 
     i = 0
     while i < 2:
@@ -81,24 +81,41 @@ def __query_cart(token, goods_id, host, port):
                     content_json = json.loads(str(response))
                     if content_json.get('code') == 'K-000000':
                         for info in content_json['context']['goodsInfos']:
-                            if info['goodsInfoId'] == goods_id:
-                                buy_count = info['buyCount']
-                                logger.info('query cart info success, goods[{0}] num in cart: [{1}].'.format(goods_id, buy_count))
-                                return buy_count
-                        if buy_count is None:
-                            buy_count = 0  # no goods in cart
-                            logger.info('query cart info success, goods[{0}] num in cart: [{1}].'.format(goods_id, buy_count))
-                            return buy_count
+                            cart_status[info['goodsInfoId']] = info['buyCount']
+                            logger.info('query cart info success, goods[{0}] num in cart: [{1}].'.format(info['goodsInfoId'], info['buyCount']))
+
+                            goods_info = {}
+                            goods_info['storeId'] = info['storeId']
+                            goods_info['marketPrice'] = info['marketPrice']
+                            if info['goodsInfoId'] in goods_lock_info.keys():
+                                goods_lock_info[info['goodsInfoId']].update(goods_info)
+                            else:
+                                goods_lock_info[info['goodsInfoId']] = goods_info
+
+                        goodsMarketingMap = content_json['context']['goodsMarketingMap']
+                        if not goodsMarketingMap:
+                            return cart_status
+
+                        # 将折扣信息更新到goods lock info
+                        for discount_goods_id in content_json['context']['goodsMarketingMap'].keys():
+                            discount_info_list = content_json['context']['goodsMarketingMap'][discount_goods_id][0]['fullDiscountLevelList']
+                            goods_lock_info[discount_goods_id]['discount'] = discount_info_list
+
+                        if goods_id not in cart_status.keys():
+                            cart_status[goods_id] = 0
+                            logger.info('query cart info success, goods[{0}] num in cart: [{1}].'.format(goods_id, 0))
+
+                        return cart_status
                     else:
                         # logger.info('query goods[{0}] cart info return code: [{1}].'.format(goods_id, content_json.get('code')))
-                        return buy_count
+                        return None
                 except Exception as e:
                     logger.info('query cart[{0}] exception: [{1}].'.format(goods_id, e))
         except Exception as e:
             logger.info('query cart[{0}] exception: [{1}].'.format(goods_id, e))
 
     logger.info('query cart[{0}] failed.'.format(goods_id))
-    return buy_count
+    return None
 
 
 def __delete_goods_in_cart(token, goods_id, host, port):
@@ -199,26 +216,16 @@ def __submit_order(token, goods_id, goods_num, host, port):
                             goodsMarketingMap = content_json['context']['goodsMarketingMap']
                             if not goodsMarketingMap:
                                 logger.info('[{0}] no discount info in response content[{1}].'.format(goods_id, str(response)))
-                                if goods_id == '2c9194587219d0ae017219dc8b8f0167':
-                                    goods_info['storeId'] = 123456861
-                                    goods_info['marketingId'] = 2011
-                                    goods_info['marketingLevelId'] = 4726
-                                    return goods_info
-                                else:
+                                if goods_id not in goods_lock_info.keys():
                                     continue
 
-                            if goods_id in goodsMarketingMap.keys():
-                                goods_info['storeId'] = goodsMarketingMap[goods_id][0]['storeId']
-                            else:
                                 goods_info['storeId'] = 123456861
+                                discount_info_list = goods_lock_info[goods_id]
 
-                            if goods_id in content_json['context']['goodsMarketingMap'].keys():
+                            else:
+                                goods_info['storeId'] = goodsMarketingMap[goods_id][0]['storeId']
                                 discount_info_list = content_json['context']['goodsMarketingMap'][goods_id][0]['fullDiscountLevelList']
                                 goods_lock_info[goods_id] = discount_info_list
-                            elif goods_id in goods_lock_info.keys():
-                                discount_info_list = goods_lock_info[goods_id]
-                            else:
-                                discount_info_list = []
 
                             selected_discount_info = None
 
@@ -238,8 +245,7 @@ def __submit_order(token, goods_id, goods_num, host, port):
                             else:
                                 marketingId = None
                                 marketingLevelId = None
-                            logger.info('submit order[{0}] parse marketingId[{1}] marketingLevelId[{2}] success.'.format(
-                                goods_id, marketingId, marketingLevelId))
+                            logger.info('submit order[{0}] parse marketingId[{1}] marketingLevelId[{2}] success.'.format(goods_id, marketingId, marketingLevelId))
 
                             goods_info['marketingId'] = marketingId
                             goods_info['marketingLevelId'] = marketingLevelId
@@ -263,16 +269,23 @@ def __confirm(token, goods_id, goods_num, goods_info, host, port):
     if not host:
         host = ''
 
-    marketingId = goods_info.get('marketingId', None)
-    marketingLevelId = goods_info.get('marketingLevelId', None)
+    discount_info = goods_info['discount']
+    if discount_info is not None:
+        marketingId = discount_info.get('marketingId', None)
+        marketingLevelId = discount_info.get('discountLevelId', None)
+    else:
+        marketingId = None
+        marketingLevelId = None
     price = goods_info.get('goods_price', None)
+
     if marketingId is None or marketingLevelId is None:
         tradePrice = price * goods_num
         # data = {"tradeItems": [{"skuId": "2c9194597219d0ad017219dc903b0396", "num": 1}], "tradeMarketingList": [],"forceConfirm": False, "tradePrice": tradePrice}
-        data = {"tradeItems": [{"skuId": goods_id, "num": goods_num}], "tradeMarketingList": [], "forceConfirm": False, "tradePrice": price}
+        data = {"tradeItems": [{"skuId": goods_id, "num": goods_num}], "tradeMarketingList": [], "forceConfirm": False, "tradePrice": tradePrice}
     else:
+        tradePrice = price * goods_num * discount_info['discount']
         # data = {"tradeItems":[{"skuId":goods_id,"num":goods_num, "price": price}],"tradeMarketingList":[{"marketingId":marketingId,"marketingLevelId":marketingLevelId,"skuIds":[goods_id],"giftSkuIds":[]}],"forceConfirm":False}
-        data = {"tradeItems":[{"skuId":goods_id,"num":goods_num}],"tradeMarketingList":[{"marketingId":marketingId,"marketingLevelId":marketingLevelId,"skuIds":[goods_id],"giftSkuIds":[]}],"forceConfirm":False,"tradePrice":2049.6}
+        data = {"tradeItems":[{"skuId":goods_id,"num":goods_num}],"tradeMarketingList":[{"marketingId":marketingId,"marketingLevelId":marketingLevelId,"skuIds":[goods_id],"giftSkuIds":[]}],"forceConfirm":False,"tradePrice":tradePrice}
         # {"tradeItems":[{"skuId":"2c9194597219d0ad017219dc903b0396","num":6}],"tradeMarketingList":[{"marketingId":715,"marketingLevelId":1647,"skuIds":["2c9194597219d0ad017219dc903b0396"],"giftSkuIds":[]}],"forceConfirm":false,"tradePrice":2049.6}
 
     data_json = json.dumps(data)
@@ -400,8 +413,36 @@ def __get_token(user, proxyHost, proxyPort):
 
 
 def __get_goods_info(token, goods_id, goods_num, host, port):
-    response = __submit_order(token, goods_id, goods_num, host, port)
-    return response
+    # response = __submit_order(token, goods_id, goods_num, host, port)
+    # return response
+
+    goods_info = {}
+    if goods_id in goods_lock_info.keys():
+        goods_info['storeId'] = goods_lock_info[goods_id]['storeId']
+        goods_info['goods_price'] = goods_lock_info[goods_id]['marketPrice']
+        discount_info_list = goods_lock_info[goods_id].get('discount', [])
+
+        selected_discount_info = None
+        for discount_info in discount_info_list:
+            if discount_info['fullCount'] == goods_num:
+                selected_discount_info = discount_info
+                break
+            elif discount_info['fullCount'] < goods_num:
+                if selected_discount_info is None or \
+                        discount_info['fullCount'] > selected_discount_info['fullCount']:
+                    selected_discount_info = discount_info
+
+        if selected_discount_info is not None:
+            goods_info['discount'] = selected_discount_info
+            logger.info('goods[{0}] find matching info in goods lock info[{1}].'.format(goods_id, goods_info))
+        else:
+            goods_info['discount'] = None
+            logger.info('goods[{0}] no matching discount info in goods lock info[{1}].'.format(goods_id, goods_lock_info))
+
+
+        return goods_info
+    logger.info('goods[{0}] not in goods lock info[{1}].'.format(goods_id, goods_lock_info))
+    return None
 
 
 def __get_address_id(user, token, host, port):
@@ -419,9 +460,9 @@ def __get_address_id(user, token, host, port):
 def __query_cart_info(user, token, goods_id, host, port):
     user_key = user['email']
     if user_key not in secret_key_info.keys() or secret_key_info[user_key].get(goods_id, None) is None:
-        num_in_cart = __query_cart(token, goods_id, host, port)
-        if num_in_cart is not None:
-            secret_key_info[user_key][goods_id] = num_in_cart
+        cart_status = __query_cart(token, goods_id, host, port)
+        if cart_status is not None:
+            secret_key_info[user_key][goods_id] = cart_status[goods_id]
 
     return secret_key_info[user_key].get(goods_id, None)
 
@@ -527,6 +568,34 @@ def init_user_info(user, host, port):
     for goods_id in user['goods'].keys():
         __update_cart_info(user, token, goods_id, host, port)
 
+    save_goods_lock_info()
+
+
+def load_goods_lock_info():
+    filename = 'goods_lock_info.txt'
+    try:
+        f = open(filename, 'r')
+        content = f.read()
+        if not content.strip():
+            content = '{}'
+    except:
+        content = '{}'
+    goods_lock_info = json.loads(content)
+    logger.info('goods lock info dict: ------------------------------------------------------------------')
+    logger.info(goods_lock_info)
+    logger.info('---------------------------------------------------------------------------------')
+
+
+def save_goods_lock_info():
+    filename = 'goods_lock_info.txt'
+    try:
+        content = json.dumps(goods_lock_info)
+        f = open(filename, 'w', encoding='utf-8')
+        f.write(content)
+        f.close()
+    except Exception as e:
+        logger.exception('save goods lock info to [{0}] exception: [{1}].'.format(filename, e))
+
 
 if __name__ == "__main__":
     util.config_logger('auto_order')
@@ -542,10 +611,10 @@ if __name__ == "__main__":
             'seat': 'L48',
             'arrive_time': '2017-05-01 12:00:00',
             'passport': 'G50442496',
-            'goods': {'2c9194597219d0ad017219dc93570618': [2, 2]}
+            'goods': {'2c91c7f473bf846f0173c904062f19d0': [3, 2]}
             }
 
-    goods_id = '2c9194597219d0ad017219dc93570618'
+    goods_id = '2c91c7f473bf846f0173c904062f19d0'
 
     host = '110.90.175.241'
     port = 4235
@@ -553,5 +622,7 @@ if __name__ == "__main__":
     host = None
 
     # init_user_info(user, host, port)
+    load_goods_lock_info()
     lock_order(user, goods_id, host, port)
+    save_goods_lock_info()
     pass
