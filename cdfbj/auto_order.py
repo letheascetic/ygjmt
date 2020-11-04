@@ -199,10 +199,13 @@ def __submit_order(token, goods_id, goods_num, host, port):
                             goodsMarketingMap = content_json['context']['goodsMarketingMap']
                             if not goodsMarketingMap:
                                 logger.info('[{0}] no discount info in response content[{1}].'.format(goods_id, str(response)))
-                                goods_info['storeId'] = 123456861
-                                goods_info['marketingId'] = None
-                                goods_info['marketingLevelId'] = None
-                                return goods_info
+                                if goods_id == '2c9194587219d0ae017219dc8b8f0167':
+                                    goods_info['storeId'] = 123456861
+                                    goods_info['marketingId'] = 2011
+                                    goods_info['marketingLevelId'] = 4726
+                                    return goods_info
+                                else:
+                                    continue
 
                             if goods_id in goodsMarketingMap.keys():
                                 goods_info['storeId'] = goodsMarketingMap[goods_id][0]['storeId']
