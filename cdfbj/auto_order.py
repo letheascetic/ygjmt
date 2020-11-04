@@ -92,6 +92,10 @@ def __query_cart(token, goods_id, host, port):
                             else:
                                 goods_lock_info[info['goodsInfoId']] = goods_info
 
+                        if goods_id not in cart_status.keys():
+                            cart_status[goods_id] = 0
+                            logger.info('query cart info success, goods[{0}] num in cart: [{1}].'.format(goods_id, 0))
+
                         goodsMarketingMap = content_json['context']['goodsMarketingMap']
                         if not goodsMarketingMap:
                             return cart_status
@@ -100,10 +104,6 @@ def __query_cart(token, goods_id, host, port):
                         for discount_goods_id in content_json['context']['goodsMarketingMap'].keys():
                             discount_info_list = content_json['context']['goodsMarketingMap'][discount_goods_id][0]['fullDiscountLevelList']
                             goods_lock_info[discount_goods_id]['discount'] = discount_info_list
-
-                        if goods_id not in cart_status.keys():
-                            cart_status[goods_id] = 0
-                            logger.info('query cart info success, goods[{0}] num in cart: [{1}].'.format(goods_id, 0))
 
                         return cart_status
                     else:
@@ -412,11 +412,15 @@ def __get_token(user, proxyHost, proxyPort):
     return True
 
 
-def __get_goods_info(token, goods_id, goods_num, host, port):
+def __get_goods_info(user, token, goods_id, goods_num, host, port):
     # response = __submit_order(token, goods_id, goods_num, host, port)
     # return response
 
     goods_info = {}
+
+    if goods_id not in goods_lock_info.keys():
+        __query_cart_info(user, token, goods_id, host, port)
+
     if goods_id in goods_lock_info.keys():
         goods_info['storeId'] = goods_lock_info[goods_id]['storeId']
         goods_info['goods_price'] = goods_lock_info[goods_id]['marketPrice']
@@ -439,8 +443,8 @@ def __get_goods_info(token, goods_id, goods_num, host, port):
             goods_info['discount'] = None
             logger.info('goods[{0}] no matching discount info in goods lock info[{1}].'.format(goods_id, goods_lock_info))
 
-
         return goods_info
+
     logger.info('goods[{0}] not in goods lock info[{1}].'.format(goods_id, goods_lock_info))
     return None
 
@@ -469,9 +473,9 @@ def __query_cart_info(user, token, goods_id, host, port):
 
 def __update_cart_info(user, token, goods_id, host, port):
     user_key = user['email']
-    num_in_cart = __query_cart(token, goods_id, host, port)
-    if num_in_cart is not None:
-        secret_key_info[user_key][goods_id] = num_in_cart
+    cart_status = __query_cart(token, goods_id, host, port)
+    if cart_status is not None:
+        secret_key_info[user_key][goods_id] = cart_status[goods_id]
 
 
 def lock_order(user, goods_id, host, port):
@@ -504,7 +508,7 @@ def lock_order(user, goods_id, host, port):
     secret_key_info[user_key][goods_id] = goods_num
 
     # 第四步，确定要购买的东西
-    goods_info = __get_goods_info(token, goods_id, goods_num, host, port)
+    goods_info = __get_goods_info(user, token, goods_id, goods_num, host, port)
     if goods_info is None:
         return False
 
