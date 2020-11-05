@@ -290,6 +290,7 @@ class Worker(threading.Thread):
                             logger.info('goods[{0}] send mail to [{1}].'.format(goods_info, mail_users))
                             for user in mail_users:
                                 self.send_mail(goods_info, user, title=mail_title)
+                            self.send_mail(goods_info, mail_users[0], self_sender=False, title=mail_title, sys_mail=True)
 
                     elif update_flag == 2:
                         if mail_users:
@@ -298,6 +299,7 @@ class Worker(threading.Thread):
                             for user in mail_users:
                                 self.send_mail(goods_info, user, title=None)
                                 self.user_status_dict[user][goods_id] = True
+                            self.send_mail(goods_info, mail_users[0], self_sender=False, title=None, sys_mail=True)
                         self.message_queue.add('user_status_dict')
 
                 except Exception as e:
