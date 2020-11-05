@@ -213,7 +213,7 @@ def __submit_order(token, goods_id, goods_num, host, port):
                             if not goodsMarketingMap:
                                 logger.info('[{0}] no discount info in response content[{1}].'.format(goods_id, str(response)))
                                 goods_info['storeId'] = 123456861
-                                if goods_id not in goods_lock_info.keys() and i == 0:
+                                if goods_id not in goods_lock_info.keys() and i == 1:
                                     continue
                             else:
                                 goods_info['storeId'] = goodsMarketingMap[goods_id][0]['storeId']
