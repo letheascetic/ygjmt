@@ -207,52 +207,28 @@ def __submit_order(token, goods_id, goods_num, host, port):
                     if content_json.get('code') == 'K-000000':
                         logger.info('submit order[{0}] success.'.format(goods_id))
                         try:
-                            goods_info['goods_price'] = content_json['context']['tradePrice']
-                            # for info in content_json['context']['goodsInfos']:
-                            #     if info['goodsInfoId'] == goods_id:
-                            #         goods_info['goods_price'] = info['salePrice']
-                            #         break
+                            goods_info['marketPrice'] = content_json['context']['tradePrice']
 
                             goodsMarketingMap = content_json['context']['goodsMarketingMap']
                             if not goodsMarketingMap:
                                 logger.info('[{0}] no discount info in response content[{1}].'.format(goods_id, str(response)))
-                                if goods_id not in goods_lock_info.keys():
-                                    continue
-
                                 goods_info['storeId'] = 123456861
-                                discount_info_list = goods_lock_info[goods_id]
-
+                                if goods_id not in goods_lock_info.keys() and i == 0:
+                                    continue
                             else:
                                 goods_info['storeId'] = goodsMarketingMap[goods_id][0]['storeId']
                                 discount_info_list = content_json['context']['goodsMarketingMap'][goods_id][0]['fullDiscountLevelList']
-                                goods_lock_info[goods_id] = discount_info_list
+                                goods_info['discount'] = discount_info_list
 
-                            selected_discount_info = None
-
-                            for discount_info in discount_info_list:
-                                if discount_info['fullCount'] == goods_num:
-                                    selected_discount_info = discount_info
-                                    break
-                                elif discount_info['fullCount'] < goods_num:
-                                    if selected_discount_info is None or \
-                                            discount_info['fullCount'] > selected_discount_info['fullCount']:
-                                        selected_discount_info = discount_info
-
-                            logger.info('submit order[{0}] select discount info: [{1}].'.format(goods_id, selected_discount_info))
-                            if selected_discount_info is not None:
-                                marketingId = selected_discount_info.get('marketingId', None)
-                                marketingLevelId = selected_discount_info.get('discountLevelId', None)
+                            if goods_id not in goods_lock_info.keys():
+                                goods_lock_info[goods_id] = goods_info
                             else:
-                                marketingId = None
-                                marketingLevelId = None
-                            logger.info('submit order[{0}] parse marketingId[{1}] marketingLevelId[{2}] success.'.format(goods_id, marketingId, marketingLevelId))
+                                goods_lock_info[goods_id].update(goods_info)
 
-                            goods_info['marketingId'] = marketingId
-                            goods_info['marketingLevelId'] = marketingLevelId
-
+                            logger.info('submit order[{0}] discount info: [{1}].'.format(goods_id, goods_info))
                             return goods_info
                         except Exception as e:
-                            logger.info('submit order[{0}] parse marketingId marketingLevelId failed: [{1}].'.format(goods_id, str(response)))
+                            logger.info('submit order[{0}] failed: [{1}][{2}].'.format(goods_id, str(response), e))
                 except Exception as e:
                     logger.info('submit order[{0}] exception: [{1}].'.format(goods_id, e))
             return None
@@ -419,7 +395,8 @@ def __get_goods_info(user, token, goods_id, goods_num, host, port):
     goods_info = {}
 
     if goods_id not in goods_lock_info.keys():
-        __query_cart_info(user, token, goods_id, host, port)
+        __submit_order(token, goods_id, goods_num, host, port)
+        # __query_cart_info(user, token, goods_id, host, port)
 
     if goods_id in goods_lock_info.keys():
         goods_info['storeId'] = goods_lock_info[goods_id]['storeId']
