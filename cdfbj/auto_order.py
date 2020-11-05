@@ -401,8 +401,10 @@ def __get_goods_info(user, token, goods_id, goods_num, host, port):
     if goods_id in goods_lock_info.keys():
         goods_info['storeId'] = goods_lock_info[goods_id]['storeId']
         goods_info['goods_price'] = goods_lock_info[goods_id]['marketPrice']
-        discount_info_list = goods_lock_info[goods_id].get('discount', [])
+        if goods_lock_info[goods_id].get('discount', None) is None:
+            __query_cart_info(user, token, goods_id, host, port)
 
+        discount_info_list = goods_lock_info[goods_id].get('discount', [])
         selected_discount_info = None
         for discount_info in discount_info_list:
             if discount_info['fullCount'] == goods_num:
