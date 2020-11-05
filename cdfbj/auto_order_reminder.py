@@ -239,6 +239,12 @@ class AutoOrderReminder(object):
         proxy_num = self.config.get('ip_pool_num', 1)
 
         users = [user for user in self.user_info_dict.keys() if len(self.user_info_dict[user]['goods']) != 0]
+
+        for user_key in users:
+            user = self.user_info_dict[user_key]
+            self.init_lock_user_info(user)
+            time.sleep(10)
+
         user_num = len(users)
         time_interval = 3600 / user_num
         last_time = None
@@ -254,7 +260,7 @@ class AutoOrderReminder(object):
                 if last_time is None or (time.time() - last_time) > time_interval:
                     user = self.user_info_dict[users[next_user_index]]
                     self.init_lock_user_info(user)
-                    auto_order.save_goods_lock_info()
+                    # auto_order.save_goods_lock_info()
                     last_time = time.time()
                     next_user_index = next_user_index + 1
                     if next_user_index == len(users):
