@@ -390,7 +390,7 @@ def __get_token(user, proxyHost, proxyPort):
     return True
 
 
-def __get_goods_info(user, token, goods_id, goods_num, host, port, check_discount):
+def __get_goods_info(user, token, goods_id, goods_num, host, port, goods_discount):
     # response = __submit_order(token, goods_id, goods_num, host, port)
     # return response
 
@@ -398,14 +398,17 @@ def __get_goods_info(user, token, goods_id, goods_num, host, port, check_discoun
 
     if goods_id not in goods_lock_info.keys():
         __query_cart(token, goods_id, host, port)
+        if goods_id not in goods_lock_info.keys():
+            __submit_order(token, goods_id, goods_num, host, port)
         # __submit_order(token, goods_id, goods_num, host, port)
         # __query_cart_info(user, token, goods_id, host, port)
 
     if goods_id in goods_lock_info.keys():
         goods_info['storeId'] = goods_lock_info[goods_id]['storeId']
         goods_info['goods_price'] = goods_lock_info[goods_id]['marketPrice']
-        if goods_lock_info[goods_id].get('discount', None) is None and check_discount:
-            __query_cart(token, goods_id, host, port)
+        if goods_lock_info[goods_id].get('discount', None) is None and goods_discount:
+            __submit_order(token, goods_id, goods_num, host, port)
+            # __query_cart(token, goods_id, host, port)
 
         discount_info_list = goods_lock_info[goods_id].get('discount', [])
         selected_discount_info = None
@@ -460,7 +463,7 @@ def __update_cart_info(user, token, goods_id, host, port):
         secret_key_info[user_key][goods_id] = cart_status[goods_id]
 
 
-def lock_order(user, goods_id, host, port, check_discount=False):
+def lock_order(user, goods_id, host, port, goods_discount):
     user_key = user['email']
 
     # 第一步，获取token
@@ -490,7 +493,7 @@ def lock_order(user, goods_id, host, port, check_discount=False):
     secret_key_info[user_key][goods_id] = goods_num
 
     # 第四步，确定要购买的东西
-    goods_info = __get_goods_info(user, token, goods_id, goods_num, host, port, check_discount)
+    goods_info = __get_goods_info(user, token, goods_id, goods_num, host, port, goods_discount)
     if goods_info is None:
         return False
 
@@ -511,7 +514,7 @@ def lock_order(user, goods_id, host, port, check_discount=False):
     return True
 
 
-def add_cart(user, goods_id, host, port, stock):
+def add_cart(user, goods_id, host, port, stock, goods_discount):
     user_key = user['email']
 
     if not __get_token(user, host, port):
@@ -539,6 +542,11 @@ def add_cart(user, goods_id, host, port, stock):
     if not __add_to_cart(token, goods_id, num_to_add, host, port):
         return False
     secret_key_info[user_key][goods_id] = num_in_cart + num_to_add
+
+    if goods_discount is not None and (goods_id not in goods_lock_info.keys() or goods_lock_info[goods_id].get('discount', None) is None):
+        __submit_order(token, goods_id, goods_num, host, port)
+        # __get_goods_info(user, token, goods_id, goods_num, host, port, check_discount=True)
+
     return True
 
 

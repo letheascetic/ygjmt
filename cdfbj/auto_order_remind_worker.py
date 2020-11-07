@@ -187,7 +187,7 @@ class Worker(threading.Thread):
                         random.shuffle(users)
                         for user in users:
                             logger.info('add goods[{0}] to user[{1}] cart.'.format(goods_info, user))
-                            auto_order.add_cart(self.user_info_dict[user], goods_id, host, port, goods_info['stock'])
+                            auto_order.add_cart(self.user_info_dict[user], goods_id, host, port, goods_info['stock'], goods_info['discount'])
 
                     # 有要锁单的用户，则开启锁单
                     while len(mail_users) != 0:
@@ -200,7 +200,7 @@ class Worker(threading.Thread):
                         if user is None:
                             user = random.choice(mail_users)
 
-                        if auto_order.lock_order(self.user_info_dict[user], goods_id, host, port):
+                        if auto_order.lock_order(self.user_info_dict[user], goods_id, host, port, goods_info['discount']):
                             logger.info('[{0}] auto order [{1}] success.'.format(user, goods_info))
                             self.user_status_dict[user][goods_id] = self.user_status_dict[user][goods_id] - 1
                             self.send_mail(goods_info, user)
