@@ -427,7 +427,10 @@ def __get_goods_info(user, token, goods_id, goods_num, host, port, goods_discoun
         else:
             goods_info['discount'] = None
             logger.info('goods[{0}] no matching discount info in goods lock info[{1}].'.format(goods_id, discount_info_list))
-
+            if goods_id == '2c91c7f473bf846f0173e1c610e73c18' or goods_id == '2c91c7f473bf846f0173e1c610e23c16':
+                selected_discount_info = {'discountLevelId': 4751, 'marketingId': 2015, 'fullAmount': None, 'fullCount': 3, 'discount': 0.68}
+                goods_info['discount'] = selected_discount_info
+                logger.info('goods[{0}] use default discount info:[{1}].'.format(goods_id, discount_info))
         return goods_info
 
     logger.info('goods[{0}] not in goods lock info[{1}].'.format(goods_id, goods_lock_info))
