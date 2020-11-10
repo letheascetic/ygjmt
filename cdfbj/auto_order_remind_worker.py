@@ -147,6 +147,18 @@ class Worker(threading.Thread):
                 time.sleep(2)
         return False
 
+    def lock_order(self, user, goods_id, host, port, goods_info):
+        try:
+            if auto_order.lock_order(self.user_info_dict[user], goods_id, host, port, goods_info['discount']):
+                logger.info('[{0}] auto order [{1}] success.'.format(user, goods_info))
+                self.user_status_dict[user][goods_id] = self.user_status_dict[user][goods_id] - 1
+                self.send_mail(goods_info, user)
+                if self.user_info_dict[user]['email_code'] is not None:
+                    self.send_mail(goods_info, user, self_sender=False)
+                self.message_queue.add('user_status_dict')
+        except Exception as e:
+            logger.exception('user[{0}] lock order[{0}] exception: [{1}].'.format(user, goods_id, e))
+
     def run(self):
         i = 0
         last_time = time.time()
@@ -181,6 +193,13 @@ class Worker(threading.Thread):
 
                     mail_users = self.query_user_status(goods_id, goods_info)
 
+                    if goods_id in config.AUTO_ORDER_REMINDER_CONFIG['monitor_goods_ids']:
+                        if goods_info['discount'] is None:  # 针对这些产品，折扣没有的情况下，不锁单
+                            logger.info('goods[{0}] no discount[{1}], no need to auto order for these users[{2}].'.format(goods_id, goods_info, mail_users))
+                            mail_users = []
+                        else:
+                            logger.info('goods[{0}] on sale with discount[{1}], auto order for these users[{2}].'.format(goods_id, goods_info, mail_users))
+
                     # 没有要锁单的用户，且当前库存数不为0，则把产品添加到想要锁单这个产品的用户购物车中
                     if len(mail_users) == 0 and goods_info['stock'] > 0:
                         users = self.goods_user_info.get(goods_id, [])
@@ -191,22 +210,34 @@ class Worker(threading.Thread):
 
                     # 有要锁单的用户，则开启锁单
                     while len(mail_users) != 0:
-                        user = None
-                        for super_user in config.AUTO_ORDER_REMINDER_CONFIG['super_users']:
-                            if super_user in mail_users:
-                                user = super_user
-                                break
+                        # user = None
+                        # for super_user in config.AUTO_ORDER_REMINDER_CONFIG['super_users']:
+                        #     if super_user in mail_users:
+                        #         user = super_user
+                        #         break
+                        #
+                        # if user is None:
+                        #     user = random.choice(mail_users)
 
-                        if user is None:
-                            user = random.choice(mail_users)
+                        # if auto_order.lock_order(self.user_info_dict[user], goods_id, host, port, goods_info['discount']):
+                        #     logger.info('[{0}] auto order [{1}] success.'.format(user, goods_info))
+                        #     self.user_status_dict[user][goods_id] = self.user_status_dict[user][goods_id] - 1
+                        #     self.send_mail(goods_info, user)
+                        #     if self.user_info_dict[user]['email_code'] is not None:
+                        #         self.send_mail(goods_info, user, self_sender=False)
+                        #     self.message_queue.add('user_status_dict')
 
-                        if auto_order.lock_order(self.user_info_dict[user], goods_id, host, port, goods_info['discount']):
-                            logger.info('[{0}] auto order [{1}] success.'.format(user, goods_info))
-                            self.user_status_dict[user][goods_id] = self.user_status_dict[user][goods_id] - 1
-                            self.send_mail(goods_info, user)
-                            if self.user_info_dict[user]['email_code'] is not None:
-                                self.send_mail(goods_info, user, self_sender=False)
-                            self.message_queue.add('user_status_dict')
+                        thread_list = []
+                        for user in mail_users:
+                            thread_x = threading.Thread(target=self.lock_order, args=(user, goods_id, host, port, goods_info))
+                            thread_list.append(thread_x)
+
+                        for thread_x in thread_list:
+                            thread_x.setDaemon(True)
+                            thread_x.start()
+
+                        for thread_x in thread_list:
+                            thread_x.join()
 
                         while len(self.ip_pool) == 0:
                             logger.info('ip pool is empty, waiting.')
