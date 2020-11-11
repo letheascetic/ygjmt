@@ -36,8 +36,7 @@ def init_db_command():
 
 
 def init_app(app):
-    """Register database functions with the Flask app. This is called by
-    the application factory.
+    """Register database functions with the Flask app. This is called by the application factory.
     """
     app.teardown_appcontext(shutdown_session)       # 告诉 Flask 在返回响应后进行清理的时候调用此函数
     app.cli.add_command(init_db_command)    # 添加一个新的 可以与 flask 一起工作的命令

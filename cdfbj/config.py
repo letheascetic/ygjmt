@@ -51,5 +51,11 @@ AUTO_ORDER_REMINDER_CONFIG = {
     ],
     'super_users': [
      # 'wc1148728402@163.com',
+    ],
+    'monitor_goods_ids': [
+        '2c9194587219d0ae017219dc909c03e0',
+        '2c91c7f47407d82f01740b96635e03ef',
+        '2c9194597219d0ad017219dc919d04b3',
+        '2c919458739b621d0173b9ae2b35338e',
     ]
 }

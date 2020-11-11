@@ -398,8 +398,10 @@ def __get_goods_info(user, token, goods_id, goods_num, host, port, goods_discoun
     goods_info = {}
 
     if goods_id not in goods_lock_info.keys():
+        logger.info('goods[{0}] not in goods_lock_info[{1}], query cart.'.format(goods_id, goods_lock_info))
         __query_cart(token, goods_id, host, port)
         if goods_id not in goods_lock_info.keys():
+            logger.info('goods[{0}] not in goods_lock_info[{1}], submit order.'.format(goods_id, goods_lock_info))
             __submit_order(token, goods_id, goods_num, host, port)
         # __submit_order(token, goods_id, goods_num, host, port)
         # __query_cart_info(user, token, goods_id, host, port)
@@ -408,8 +410,12 @@ def __get_goods_info(user, token, goods_id, goods_num, host, port, goods_discoun
         goods_info['storeId'] = goods_lock_info[goods_id]['storeId']
         goods_info['goods_price'] = goods_lock_info[goods_id]['marketPrice']
         if goods_lock_info[goods_id].get('discount', None) is None and goods_discount:
+            logger.info('goods[{0}] no discount info[{1}] but actually has discount now[{2}], submit order to get discount.'.format(
+                goods_id, goods_lock_info[goods_id], goods_discount))
             __submit_order(token, goods_id, goods_num, host, port)
             # __query_cart(token, goods_id, host, port)
+        else:
+            logger.info('goods[{0}] discount info[{1}] discount desc[{2}].'.format(goods_id, goods_lock_info[goods_id], goods_discount))
 
         discount_info_list = goods_lock_info[goods_id].get('discount', [])
         selected_discount_info = None
