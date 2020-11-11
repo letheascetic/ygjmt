@@ -234,7 +234,6 @@ def __submit_order(token, goods_id, goods_num, host, port):
                             logger.info('submit order[{0}] failed: [{1}][{2}].'.format(goods_id, str(response), e))
                 except Exception as e:
                     logger.info('submit order[{0}] exception: [{1}].'.format(goods_id, e))
-            return None
         except Exception as e:
             logger.info('submit order[{0}] exception: [{1}].'.format(goods_id, e))
 

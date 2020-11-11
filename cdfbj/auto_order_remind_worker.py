@@ -204,8 +204,9 @@ class Worker(threading.Thread):
                     if len(mail_users) == 0 and goods_info['stock'] > 0:
                         users = self.goods_user_info.get(goods_id, [])
                         random.shuffle(users)
+                        logger.info('add goods[{0}] to users[{1}] cart.'.format(goods_info, users))
                         for user in users:
-                            logger.info('add goods[{0}] to user[{1}] cart.'.format(goods_info, user))
+                            # logger.info('add goods[{0}] to user[{1}] cart.'.format(goods_info, user))
                             auto_order.add_cart(self.user_info_dict[user], goods_id, host, port, goods_info['stock'], goods_info['discount'])
 
                     # 有要锁单的用户，则开启锁单
