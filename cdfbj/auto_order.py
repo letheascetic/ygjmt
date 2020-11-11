@@ -24,12 +24,6 @@ def __login(user, proxyHost, proxyPort):
     user_name = user['email']
     url = 'https://mbff.yuegowu.com/login?regId={0}'.format(uuid.uuid4())
 
-    base64_name = base64.b64encode(user['login_user'].encode('utf-8')).decode('utf-8')
-    base64_password = base64.b64encode(user['login_password'].encode('utf-8')).decode('utf-8')
-
-    data = {'customerAccount': base64_name, 'customerPassword': base64_password}
-    data_json = json.dumps(data)
-
     response_info = {'token': None, 'customer_id': None}
 
     if not proxyHost:
@@ -39,6 +33,13 @@ def __login(user, proxyHost, proxyPort):
     while i < 2:
         try:
             i = i + 1
+            
+            base64_name = base64.b64encode(user['login_user'].encode('utf-8')).decode('utf-8')
+            base64_password = base64.b64encode(user['login_password'].encode('utf-8')).decode('utf-8')
+
+            data = {'customerAccount': base64_name, 'customerPassword': base64_password}
+            data_json = json.dumps(data)
+    
             response = http_util.login(url, data_json, proxyHost, proxyPort)
             if response:
                 try:
@@ -53,10 +54,10 @@ def __login(user, proxyHost, proxyPort):
                             response_info['customer_id'] = customer_id
                             return response_info
                 except Exception as err:
-                    logger.info('[{0}] login exception: [{1}].'.format(user_name, err))
+                    logger.info('[{0}] login exception: [{1}].'.format(user, err))
                 return None
         except Exception as e:
-            logger.info('[{0}] login exception: [{1}].'.format(user_name, e))
+            logger.info('[{0}] login exception: [{1}].'.format(user, e))
 
 
 # step two query cart & update goods lock info(discount info)

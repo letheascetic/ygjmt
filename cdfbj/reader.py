@@ -252,7 +252,7 @@ def update_auto_order_user_info(filename, user_info_dict):
         user_info_dict[user]['login_user'] = login_user.strip()
 
         login_password = booksheet.cell(row=i, column=7).value
-        user_info_dict[user]['login_password'] = login_password.strip()
+        user_info_dict[user]['login_password'] = str(login_password).strip()
 
         province = booksheet.cell(row=i, column=8).value
         user_info_dict[user]['province'] = province.strip()
