@@ -6,7 +6,7 @@ from sqlalchemy import Column, Integer, String, BIGINT, VARCHAR, TIMESTAMP
 
 
 class CdfbjStaticInfo(Base):
-    __tablename__ = 'Cdfbj_static_info'
+    __tablename__ = 'cdfbj_static_info'
     goods_id = Column(VARCHAR(64), primary_key=True, nullable=False)
     goods_name = Column(VARCHAR(256), nullable=False)
     goods_url = Column(VARCHAR(1024), nullable=False)
@@ -24,7 +24,7 @@ class CdfbjStaticInfo(Base):
 
 
 class CdfbjDynamicInfo(Base):
-    __tablename__ = 'Cdfbj_dynamic_info'
+    __tablename__ = 'cdfbj_dynamic_info'
     id = Column(BIGINT, primary_key=True, autoincrement=True, nullable=False)
     goods_id = Column(VARCHAR(64), nullable=False, index=True)
     goods_status = Column(VARCHAR(64), nullable=False, index=True)
