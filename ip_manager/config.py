@@ -25,6 +25,14 @@ MYSQL_CONFIG_PRODUCTION = {
 
 
 IP_MANAGER_CONFIG = {
-    'ip_owner': '芝麻http'
+    'VENDORS': {
+        'zmhttp': {
+        'enabled': True,
+        'ip_num': 3,
+        'interval': 60,
+        },
+    },
+    'DBCONFIG': MYSQL_CONFIG_TESTING,
+
 }
 

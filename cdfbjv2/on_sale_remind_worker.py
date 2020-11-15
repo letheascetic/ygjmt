@@ -205,7 +205,7 @@ class Worker(threading.Thread):
             smtp_port = 465                   # 固定端口
         else:
             smtp_server = 'smtp.qq.com'      # 固定写死
-            smtp_port = 465                   # 固定端口
+            smtp_port = 465                  # 固定端口
 
         i = 0
         while i < 1:
