@@ -11,7 +11,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 
-class Horpcn(object):
+class Horocn(object):
     def __init__(self, config, sql_helper, vendor_name=None):
         self.vendor = vendor_name
         if vendor_name is None:
@@ -44,14 +44,14 @@ class Horpcn(object):
         package = self._package
 
         # 获取可用的ip
-        ip_items = self._get_ip_available(package['package'], self._config['ip_num'])
+        ip_items = self._get_ip_available(package, self._config['ip_num'])
 
         # 添加到ip pool
         if ip_items:
             self._sql_helper.insert_ip_pool(ip_items)
 
         # 查询当前正在使用的ip数，计算需要添加的ip数
-        ip_activated = self._sql_helper.query_ip_activated(self.vendor, 60)
+        ip_activated = self._sql_helper.query_ip_activated(self.vendor, 10)
 
         if ip_activated >= self._config['ip_num']:
             self.update_time = time.time()
@@ -81,7 +81,7 @@ class Horpcn(object):
         try:
             url = 'https://proxyapi.horocn.com/api/ip/whitelist'
             data = {'token': self._package['token']}
-            r = requests.get(url, timeout=10, data=data)
+            r = requests.get(url, timeout=10, params=data, verify=False)
 
             if r.status_code == requests.codes.ok:
                 content = json.loads(r.text)
@@ -106,7 +106,7 @@ class Horpcn(object):
         try:
             url = 'https://proxyapi.horocn.com/api/ip/whitelist'
             data = {'token': self._package['token'], 'ip': ip}
-            r = requests.put(url, data=data, timeout=10)
+            r = requests.put(url, timeout=10, params=data, verify=False)
             if r.status_code == requests.codes.ok:
                 content = json.loads(r.text)
                 logger.info('[{0}] add ip[{1}] to white list response[{2}].'.format(self.vendor, ip, content))
@@ -121,11 +121,10 @@ class Horpcn(object):
         try:
             url = 'https://proxyapi.horocn.com/api/ip/whitelist'
             data = {'token': self._package['token'], 'ip': ip}
-            r = requests.delete(url, timeout=10, data=data)
+            r = requests.delete(url, timeout=10, params=data, verify=False)
             if r.status_code == requests.codes.ok:
                 content = json.loads(r.text)
                 logger.info('[{0}] delete ip[{1}] from white list response[{2}].'.format(self.vendor, ip, content))
                 return content
         except Exception as e:
             logger.exception('[{0}] delete ip[{1}] from white list exception[{2}].'.format(self.vendor, ip, e))
-

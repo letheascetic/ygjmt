@@ -6,6 +6,7 @@ import logging
 import datetime
 import requests
 from vendor.zmhttp import ZmHttp
+from vendor.horocn import Horocn
 from sql.sqlim import SqlIpManager
 
 
@@ -22,16 +23,21 @@ class Manager(object):
         self.sql_helper = SqlIpManager(config['DBCONFIG'])
         self.vendors = []
         for vendor_name in config.get('VENDORS', []):
+            logger.info('vendor[{0}] with config[{1}].'.format(vendor_name, config['VENDORS'][vendor_name]))
             if config['VENDORS'][vendor_name]['enabled']:
-                logger.info('activated vendor[{0}] with config[{1}].'.format(vendor_name, config['VENDORS'][vendor_name]))
-                self.vendors.append(ZmHttp(config['VENDORS'][vendor_name], self.sql_helper, vendor_name))
+                if vendor_name == 'zmhttp':
+                    self.vendors.append(ZmHttp(config['VENDORS'][vendor_name], self.sql_helper, vendor_name))
+                elif vendor_name == 'horocn':
+                    self.vendors.append(Horocn(config['VENDORS'][vendor_name], self.sql_helper, vendor_name))
+                else:
+                    logger.warning('unknown vendor[{0}] with config[{1}].'.format(vendor_name, config['VENDORS'][vendor_name]))
         self.seeker_info = None
         self.update_time = time.time()
 
     def __get_local_ip(self):
         url = 'https://ip.tool.lu/'
         try:
-            r = requests.get(url, timeout=10)
+            r = requests.get(url, timeout=10, verify=False)
             if r.status_code == requests.codes.ok:
                 logger.info('get local ip response[{0}].'.format(r.text))
                 local_ip = r.text.split('\r\n')[0].split(':')[-1].strip()
