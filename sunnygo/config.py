@@ -40,6 +40,8 @@ IP_MANAGER_CONFIG = {
 # CDF北京订阅服务配置项
 CDFBJ_SUBSCRIBER_CONFIG = {
     'DBCONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
-
+    'sys_user_file': '管理员权限北京日上订阅用户.xlsx',
+    'sys_goods_file': '管理员权限北京日上订阅.xlsx',
 }
+
 
