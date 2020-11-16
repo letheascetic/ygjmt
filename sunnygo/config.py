@@ -12,12 +12,14 @@ LOG_CONFIG = {
 }
 
 
+# 数据库配置项
 MYSQL_CONFIG_TESTING = {
     'DB_CONNECT_TYPE': 'sqlalchemy',
     'DB_CONNECT_STRING': 'mysql+pymysql://ascetic:ascetic@127.0.0.1:3306/ygjmt_db?charset=utf8mb4'
 }
 
 
+# IP Manager配置项
 IP_MANAGER_CONFIG = {
     'VENDORS': {
         'zmhttp': {
@@ -31,6 +33,13 @@ IP_MANAGER_CONFIG = {
             'interval': 10,
         }
     },
-    'DBCONFIG': MYSQL_CONFIG_TESTING,
+    'DBCONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
+}
+
+
+# CDF北京订阅服务配置项
+CDFBJ_SUBSCRIBER_CONFIG = {
+    'DBCONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
+
 }
 
