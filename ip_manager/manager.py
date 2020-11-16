@@ -1,11 +1,11 @@
 # coding: utf-8
 
+import util
 import time
 import logging
 import datetime
 import requests
-import threading
-from owner.zmhttp import ZmHttp
+from vendor.zmhttp import ZmHttp
 from db.sqlim import SqlIpManager
 
 
@@ -15,9 +15,8 @@ from scrapy.selector import Selector
 logger = logging.getLogger(__name__)
 
 
-class Manager(threading.Thread):
+class Manager(object):
     def __init__(self, config):
-        threading.Thread.__init__(self)
         self.name = 'ip_manager'
         self.config = config
         self.m_running = True
@@ -26,7 +25,7 @@ class Manager(threading.Thread):
         for vendor_name in config.get('VENDORS', []):
             if config['VENDORS'][vendor_name]['enabled']:
                 logger.info('activated vendor[{0}] with config[{1}].'.format(vendor_name, config['VENDORS'][vendor_name]))
-                self.vendors.append(ZmHttp(config['VENDORS'][vendor_name], vendor_name))
+                self.vendors.append(ZmHttp(config['VENDORS'][vendor_name], self.sql_helper, vendor_name))
         self.seeker_info = None
         self.update_time = time.time()
 
@@ -61,7 +60,7 @@ class Manager(threading.Thread):
         # 启动后初始化，需要更新seeker中ip manager数据，同时更新各ip vendor
         self.sql_helper.update_seeker(self.seeker_info)
 
-        # 更新各vendor
+        # 更新各ip vendor
         for vendor in self.vendors:
             vendor.init_vendor(self.seeker_info['ip'])
 
@@ -97,16 +96,24 @@ class Manager(threading.Thread):
 
     def __push_ips(self):
         for vendor in self.vendors:
-            # 为初始化成功，则打印提示
-            if not vendor.vendor_initialized:
-                logger.info('vendor[{0}] not initialized.'.format(vendor.vendor))
-                continue
+            vendor.check_activated_ips()
 
-
-
-    def run(self):
+    def execute(self):
         # 初始化
         self.__init()
 
         while self.m_running:
-            time.sleep(10)
+            try:
+                time.sleep(10)
+                self.__push_ips()
+            except Exception as e:
+                logger.exception('execute [{0}] exception[{1}].'.format(self.name, e))
+
+
+if __name__ == "__main__":
+    util.config_logger('ip manager')
+
+    import config
+    manager = Manager(config.IP_MANAGER_CONFIG)
+    manager.execute()
+    pass
