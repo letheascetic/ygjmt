@@ -3,6 +3,7 @@
 import json
 import time
 import logging
+import datetime
 import requests
 
 
@@ -20,7 +21,7 @@ class ZmHttp(object):
         self._packages = [{'appkey': 'beefce6b397e3f7eecbc56f692aef9c3', 'package': '124824'},
                           {'appkey': '2252f48ef2c1c33117eb6986dd90e6e6', 'package': '110169'}]
         self._package_index = 0
-        self.update_time = time.time()
+        self.update_time = None
 
     def init_vendor(self, ip):
         if self.ip_in_white_list(ip):
@@ -32,8 +33,7 @@ class ZmHttp(object):
         return self.vendor_initialized
 
     def check_activated_ips(self):
-        time_span = time.time() - self.update_time
-        if time_span < self._config['interval']:
+        if self.update_time is not None and (time.time() - self.update_time) < self._config['interval']:
             return
 
         self.update_time = time.time()
@@ -153,7 +153,7 @@ class ZmHttp(object):
                     for ip_info in content['data']:
                         ip_item = {'ip': ip_info['ip'], 'port': ip_info['port'], 'city': ip_info['city'],
                                    'vendor': self.vendor, 'expire_time': ip_info['expire_time'],
-                                   'create_time': ip_info['create_time']}
+                                   'create_time': datetime.datetime.now()}
                         ip_items.append(ip_item)
                     return ip_items
             logger.info('[{0}] get ip available[{1}|{2}] failed[{3}].'.format(self.vendor, package, ip_num, r.text))

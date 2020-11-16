@@ -66,6 +66,8 @@ class Manager(object):
         if time_span < 600:
             return
 
+        self.update_time = time.time()
+
         # 获取本地ip
         ip = self.__get_local_ip()
         if ip is None:
@@ -74,12 +76,10 @@ class Manager(object):
         # 更新register time
         self.seeker_info['register_time'] = datetime.datetime.now()
 
-        # 本地ip发生变更，更新seeker中ip manager数据
+        # 本地ip发生变更，更新seeker info中的ip
         if self.seeker_info['ip'] != ip:
             logger.info('local ip changed from [{0}] to [{1}].'.format(self.seeker_info['ip'], ip))
             self.seeker_info['ip'] = ip
-            self.sql_helper.update_seeker(self.seeker_info)
-
             # 更新各vendor
             for vendor in self.vendors:
                 vendor.vendor_initialized = False
@@ -90,6 +90,9 @@ class Manager(object):
             for vendor in self.vendors:
                 if not vendor.vendor_initialized:
                     vendor.init_vendor(ip)
+
+        # 更新ip manager到seeker表
+        self.sql_helper.update_seeker(self.seeker_info)
 
     def __push_ips(self):
         for vendor in self.vendors:

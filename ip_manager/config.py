@@ -18,12 +18,6 @@ MYSQL_CONFIG_TESTING = {
 }
 
 
-# MYSQL_CONFIG_PRODUCTION = {
-#     'DB_CONNECT_TYPE': 'sqlalchemy',
-#     'DB_CONNECT_STRING': 'mysql+pymysql://ygjmt:Fizzystudio#1.@101.132.173.34:3306/ygjmt_db?charset=utf8mb4'
-# }
-
-
 IP_MANAGER_CONFIG = {
     'VENDORS': {
         'zmhttp': {
@@ -33,6 +27,5 @@ IP_MANAGER_CONFIG = {
         },
     },
     'DBCONFIG': MYSQL_CONFIG_TESTING,
-
 }
 
