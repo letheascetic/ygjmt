@@ -71,3 +71,15 @@ class SqlIpManager(ISqlHelper):
             logger.exception('insert ip pool[{0}] exception[{1}].'.format(ip_items, e))
             self.session.rollback()
         return False
+
+    def delete_stale_data(self, days=7):
+        try:
+            expire_time = datetime.datetime.now() - datetime.timedelta(days=days)
+            query = self.session.query(IpPool).filter(IpPool.expire_time < expire_time)
+            query.delete()
+            self.session.commit()
+            logger.info('delete stale data[{0}] success.'.format(days))
+        except Exception as e:
+            logger.exception('delete stale data[{0}] exception[{1}].'.format(days, e))
+            self.session.rollback()
+        return False

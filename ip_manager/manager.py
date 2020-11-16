@@ -10,9 +10,6 @@ from vendor.horocn import Horocn
 from sql.sqlim import SqlIpManager
 
 
-from scrapy.selector import Selector
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +29,7 @@ class Manager(object):
                 else:
                     logger.warning('unknown vendor[{0}] with config[{1}].'.format(vendor_name, config['VENDORS'][vendor_name]))
         self.seeker_info = None
-        self.update_time = time.time()
+        self.update_time = datetime.datetime.now()
 
     def __get_local_ip(self):
         url = 'https://ip.tool.lu/'
@@ -68,11 +65,15 @@ class Manager(object):
             vendor.init_vendor(self.seeker_info['ip'])
 
     def __update(self):
-        time_span = time.time() - self.update_time
+        time_span = (datetime.datetime.now() - self.update_time).total_seconds()
         if time_span < 600:
             return
 
-        self.update_time = time.time()
+        # 日期改变，则清除过时的数据
+        if datetime.datetime.now().day != self.update_time.day:
+            self.sql_helper.delete_stale_data(days=1)
+
+        self.update_time = datetime.datetime.now()
 
         # 获取本地ip
         ip = self.__get_local_ip()
