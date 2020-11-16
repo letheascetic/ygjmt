@@ -21,12 +21,12 @@ MYSQL_CONFIG_TESTING = {
 IP_MANAGER_CONFIG = {
     'VENDORS': {
         'zmhttp': {
-            'enabled': True,
-            'ip_num': 2,
-            'interval': 60,
+            'enabled': True,        # 是否使用该IP供应商
+            'ip_num': 1,            # 每次获取IP的数量
+            'interval': 360,        # 每次获取IP的时间间隔（单位：秒）
         },
         'horocn': {
-            'enabled': True,
+            'enabled': False,
             'ip_num': 10,
             'interval': 10,
         }
