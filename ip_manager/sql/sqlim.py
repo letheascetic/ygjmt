@@ -51,7 +51,7 @@ class SqlIpManager(ISqlHelper):
 
     def query_ip_activated(self, vendor, time_remaining=0):
         try:
-            expire_time = datetime.datetime.utcnow() + datetime.timedelta(seconds=time_remaining)
+            expire_time = datetime.datetime.now() + datetime.timedelta(seconds=time_remaining)
             query = self.session.query(func.count('1')).filter(IpPool.vendor == vendor)\
                 .filter(IpPool.expire_time >= expire_time)
             num = query.one()[0]

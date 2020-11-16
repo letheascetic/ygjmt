@@ -46,7 +46,7 @@ class Manager(object):
 
         # 第一次使用ip manager，需要在seeker中注册ip manager
         if ip is not None and self.seeker_info is None:
-            self.seeker_info = {'id': self.name, 'tag': None, 'ip': ip, 'register_time': datetime.datetime.utcnow()}
+            self.seeker_info = {'id': self.name, 'tag': None, 'ip': ip, 'register_time': datetime.datetime.now()}
             self.sql_helper.update_seeker(self.seeker_info)
 
         # 本地ip发生变更，更新seeker中ip manager数据
@@ -72,7 +72,7 @@ class Manager(object):
             return
 
         # 更新register time
-        self.seeker_info['register_time'] = datetime.datetime.utcnow()
+        self.seeker_info['register_time'] = datetime.datetime.now()
 
         # 本地ip发生变更，更新seeker中ip manager数据
         if self.seeker_info['ip'] != ip:
