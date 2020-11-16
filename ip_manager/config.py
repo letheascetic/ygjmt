@@ -21,10 +21,15 @@ MYSQL_CONFIG_TESTING = {
 IP_MANAGER_CONFIG = {
     'VENDORS': {
         'zmhttp': {
-        'enabled': True,
-        'ip_num': 2,
-        'interval': 60,
+            'enabled': True,
+            'ip_num': 2,
+            'interval': 60,
         },
+        'horocn': {
+            'enabled': True,
+            'ip_num': 10,
+            'interval': 10,
+        }
     },
     'DBCONFIG': MYSQL_CONFIG_TESTING,
 }
