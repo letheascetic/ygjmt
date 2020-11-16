@@ -1,15 +1,14 @@
 # coding: utf-8
 
 import datetime
+from db import Base
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, VARCHAR, TEXT, INTEGER, BINARY, TIMESTAMP, SMALLINT, BIGINT, FLOAT, DATE
 
 
-_Base = declarative_base()
-
-
-class IpPool(_Base):
+class IpPool(Base):
     """table for ip_pool"""
+    __tablename__ = 'ip_pool'
 
     id = Column('id', BIGINT, primary_key=True, autoincrement=True, nullable=False)
     ip = Column('ip', VARCHAR(64), index=True, nullable=False)
@@ -25,7 +24,8 @@ class IpPool(_Base):
         return {'id': self.id, 'ip': self.ip, 'port': self.port, 'city': self.city, 'vendor': self.vendor,
                 'create_time': self.create_time, 'expire_time': self.expire_time}
 
-    def from_item(self, item):
+    @staticmethod
+    def from_item(item):
         row = IpPool(
             ip=item['ip'],
             port=item['port'],
@@ -36,8 +36,9 @@ class IpPool(_Base):
         return row
 
 
-class Seeker(_Base):
+class Seeker(Base):
     """table for seeker"""
+    __tablename__ = 'seeker'
 
     id = Column('id', VARCHAR(64), primary_key=True, nullable=False)
     tag = Column('tag', VARCHAR(64), index=False, nullable=True)

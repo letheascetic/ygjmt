@@ -40,3 +40,5 @@ def init_app(app):
     """
     app.teardown_appcontext(shutdown_session)       # 告诉 Flask 在返回响应后进行清理的时候调用此函数
     app.cli.add_command(init_db_command)    # 添加一个新的 可以与 flask 一起工作的命令
+
+

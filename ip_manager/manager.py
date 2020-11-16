@@ -6,7 +6,7 @@ import logging
 import datetime
 import requests
 from vendor.zmhttp import ZmHttp
-from db.sqlim import SqlIpManager
+from sql.sqlim import SqlIpManager
 
 
 from scrapy.selector import Selector
@@ -19,7 +19,6 @@ class Manager(object):
     def __init__(self, config):
         self.name = 'ip_manager'
         self.config = config
-        self.m_running = True
         self.sql_helper = SqlIpManager(config['DBCONFIG'])
         self.vendors = []
         for vendor_name in config.get('VENDORS', []):
@@ -30,15 +29,13 @@ class Manager(object):
         self.update_time = time.time()
 
     def __get_local_ip(self):
-        url = 'http://202020.ip138.com/'
+        url = 'https://ip.tool.lu/'
         try:
             r = requests.get(url, timeout=10)
             if r.status_code == requests.codes.ok:
-                selector = Selector(response=r)
-                title = selector.xpath('//title/text()').extract_first()
-                if title is not None:
-                    local_ip = title.split('：')[-1].strip()
-                    return local_ip
+                logger.info('get local ip response[{0}].'.format(r.text))
+                local_ip = r.text.split('\r\n')[0].split(':')[-1].strip()
+                return local_ip
             logger.info('[{0}] get local ip from url[{1}] failed[{2}].'.format(self.name, url, r.text))
         except Exception as e:
             logger.exception('[{0}] get local ip from url[{1}] exception[{2}].'.format(self.name, url, e))
@@ -102,10 +99,11 @@ class Manager(object):
         # 初始化
         self.__init()
 
-        while self.m_running:
+        while True:
             try:
                 time.sleep(10)
                 self.__push_ips()
+                self.__update()
             except Exception as e:
                 logger.exception('execute [{0}] exception[{1}].'.format(self.name, e))
 

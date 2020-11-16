@@ -2,11 +2,10 @@
 
 
 import logging
-import datetime
-from db.base import *
+from sql.base import *
 from sqlalchemy import func
 from sqlalchemy import or_,and_
-from db.sqlutil import ISqlHelper
+from sql.sqlutil import ISqlHelper
 from sqlalchemy.ext.declarative import declarative_base
 
 
@@ -33,13 +32,13 @@ class SqlIpManager(ISqlHelper):
 
     def update_seeker(self, seeker_info):
         try:
-            query = self.session.query(Seeker).filter(Seeker.id == seeker_info['seeker_id'])
+            query = self.session.query(Seeker).filter(Seeker.id == seeker_info['id'])
             seeker = query.first()
             if seeker is not None:
                 seeker.ip = seeker_info['ip']
                 seeker.register_time = seeker_info['register_time']
             else:
-                seeker = Seeker(id=seeker_info['seeker_id'], ip=seeker_info['ip'],
+                seeker = Seeker(id=seeker_info['id'], ip=seeker_info['ip'],
                                 register_time=seeker_info['register_time'], tag=seeker_info['tag'])
                 self.add(seeker)
             self.session.commit()
@@ -52,8 +51,9 @@ class SqlIpManager(ISqlHelper):
 
     def query_ip_activated(self, vendor, time_remaining=0):
         try:
+            expire_time = datetime.datetime.utcnow() + datetime.timedelta(seconds=time_remaining)
             query = self.session.query(func.count('1')).filter(IpPool.vendor == vendor)\
-                .filter((IpPool.expire_time - datetime.datetime.utcnow()).total_seconds() > time_remaining)
+                .filter(IpPool.expire_time >= expire_time)
             num = query.one()[0]
             logger.info('query ip activated[{0}|{1}] success[{2}].'.format(vendor, time_remaining, num))
             return num
@@ -63,8 +63,9 @@ class SqlIpManager(ISqlHelper):
     def insert_ip_pool(self, ip_items):
         try:
             for ip_item in ip_items:
-                row = IpPool.from_item(ip_item)
+                row = IpPool.from_item(item=ip_item)
                 self.add(row)
+            logger.info('insert ip pool[{0}] success.'.format(ip_items))
             return True
         except Exception as e:
             logger.exception('insert ip pool[{0}] exception[{1}].'.format(ip_items, e))
