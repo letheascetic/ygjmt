@@ -3,6 +3,7 @@
 import time
 import random
 import logging
+import threading
 
 
 logger = logging.getLogger(__name__)
@@ -15,6 +16,7 @@ class IpUtil(object):
         self._sql_helper = sql_helper
         self._update_time = None
         self._ip_items = []
+        self._mutex = threading.Lock()
 
     def get_proxy(self):
         # 不使能ip proxy，直接返回
@@ -33,3 +35,12 @@ class IpUtil(object):
             return None
 
         return random.choice(self._ip_items)
+
+    def feedback(self, ip_item, success):
+        """更新指定IP的失败或成功次数"""
+        self._mutex.acquire()
+        if success:
+            ip_item['success_num'] = ip_item['success_num'] + 1
+        else:
+            ip_item['failed_num'] = ip_item['failed_num'] + 1
+        self._mutex.release()

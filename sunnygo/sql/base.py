@@ -25,17 +25,20 @@ class IpPool(Base):
 
     def to_item(self):
         return {'id': self.id, 'ip': self.ip, 'port': self.port, 'city': self.city, 'vendor': self.vendor,
-                'create_time': self.create_time, 'expire_time': self.expire_time}
+                'create_time': self.create_time, 'expire_time': self.expire_time, 'failed_num': self.failed_num,
+                'success_num': self.success_num}
 
     @staticmethod
     def from_item(item):
         row = IpPool(
             ip=item['ip'],
             port=item['port'],
-            city=item['city'],
+            city=item.get('city', None),
             vendor=item['vendor'],
             create_time=item['create_time'],
-            expire_time=item['expire_time']
+            expire_time=item['expire_time'],
+            failed_num=item.get('failed_num', 0),
+            success_num=item.get('success_num', 0)
         )
         return row
 
