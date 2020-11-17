@@ -68,3 +68,14 @@ class SqlCdfBj(ISqlHelper):
         except Exception as e:
             logger.exception('get_cdfbj_goods_id_subscribe_info exception[{0}].'.format(e))
             self.session.rollback()
+
+    def get_ip_activated(self, time_remaining=30):
+        try:
+            expire_time = datetime.datetime.now() + datetime.timedelta(seconds=time_remaining)
+            query = self.session.query(IpPool)\
+                .filter(IpPool.expire_time >= expire_time)
+            items = [ip.to_item() for ip in query.all()]
+            logger.info('get ip activated[{0}] success[{1}].'.format(time_remaining, items))
+            return items
+        except Exception as e:
+            logger.exception('get ip activated[{0}] exception[{1}].'.format(time_remaining, e))

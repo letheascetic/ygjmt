@@ -58,7 +58,7 @@ class SqlIpManager(ISqlHelper):
             logger.info('query ip activated[{0}|{1}] success[{2}].'.format(vendor, time_remaining, num))
             return num
         except Exception as e:
-            logger.exception('query ip activated[{0}|{1}] success[{2}].'.format(vendor, time_remaining, e))
+            logger.exception('query ip activated[{0}|{1}] exception[{2}].'.format(vendor, time_remaining, e))
 
     def insert_ip_pool(self, ip_items):
         try:
