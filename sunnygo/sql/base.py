@@ -95,6 +95,7 @@ class CdfBjSubscriberInfo(Base):
         replenishment_switch_updated = False
 
         if item.get('replenishment_switch', None) and item['replenishment_switch'] != self.replenishment_switch:
+            replenishment_switch_updated = True
             self.replenishment_switch = item['replenishment_switch']
 
         if item.get('replenishment_threshold', None) and item['replenishment_threshold'] != self.replenishment_threshold:
@@ -106,6 +107,17 @@ class CdfBjSubscriberInfo(Base):
 
         if item.get('discount_switch', None) and item['discount_switch'] != self.discount_switch:
             self.discount_switch = item['discount_switch']
+
+    @staticmethod
+    def from_item(item):
+        return CdfBjSubscriberInfo(
+            goods_id=item['goods_id'],
+            user_id=item['user_id'],
+            replenishment_switch=item.get('replenishment_switch', 1),
+            replenishment_threshold=item.get('replenishment_threshold', 50),
+            replenishment_flag=item.get('replenishment_flag', 1),
+            discount_switch=item.get('discount_switch', 1)
+        )
 
 
 class CdfBjUserInfo(Base):

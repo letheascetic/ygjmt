@@ -47,11 +47,24 @@ class SqlCdfBj(ISqlHelper):
                 info.update(item)
             else:
                 logger.info('insert new cdfbj subscriber info[{0}].'.format(item))
-                info = User.from_item(item)
+                info = CdfBjSubscriberInfo.from_item(item)
                 self.add(info)
             self.session.commit()
             return True
         except Exception as e:
-            logger.exception('insert update user[{0}] exception[{1}].'.format(item, e))
+            logger.exception('insert update cdfbj subscriber info[{0}] exception[{1}].'.format(item, e))
             self.session.rollback()
             return False
+
+    def get_cdfbj_goods_id_subscribe_info(self):
+        """获取cdf北京产品（补货提醒or折扣提醒）的订阅信息"""
+
+        try:
+            query = self.session.query(CdfBjSubscriberInfo.goods_id, func.count('1'))\
+                .filter(or_(CdfBjSubscriberInfo.replenishment_switch == 1, CdfBjSubscriberInfo.discount_switch == 1))\
+                .group_by(CdfBjSubscriberInfo.goods_id)\
+                .order_by(func.count('1').desc())
+            return query.all()
+        except Exception as e:
+            logger.exception('get_cdfbj_goods_id_subscribe_info exception[{0}].'.format(e))
+            self.session.rollback()
