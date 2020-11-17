@@ -10,20 +10,22 @@ import threading
 
 logger = logging.getLogger(__name__)
 
+jvm_path = jpype.getDefaultJVMPath()
+jar_path = 'demo12345.jar'
+jpype.startJVM(jvm_path, "-Djava.class.path={0}".format(jar_path))
+
 
 class HttpUtil(object):
+
+    statistics = {'total': 0, 'success': 0, 'failed': 0, 'total_time_span': 0.0,
+                  'success_time_span': 0.0, 'total_avg_time': 0.0, 'success_avg_time': 0.0}
+    _mutex = threading.Lock()
+
     def __init__(self, config):
         self.name = 'http_util'
         self._config = config
-        self._mutex = threading.Lock()
 
-        jvm_path = jpype.getDefaultJVMPath()
-        jar_path = 'demo12345.jar'
-        jpype.startJVM(jvm_path, "-Djava.class.path={0}".format(jar_path))
         self._http_util = jpype.JClass('com.fizzy.sistertao.utils.OkHttpUtil')
-
-        self._http_statistics = {'total': 0, 'success': 0, 'failed': 0, 'total_time_span': 0.0,
-                                 'success_time_span': 0.0, 'total_avg_time': 0.0, 'success_avg_time': 0.0}
 
     def cdfbj_get_goods_info(self, goods_id, host=None, port=None):
         """获取cdf北京产品详情，成功则返回goods_info(dict)，失败则返回None"""
@@ -64,21 +66,22 @@ class HttpUtil(object):
             logger.exception('cdfbj get goods info[{0}] with ip proxy[{1}:{2}] exception[{3}].'.format(url, host, port, e))
             goods_info = None
 
-        self.__record(goods_info, time.time() - start)
+        HttpUtil.__record(goods_info, time.time() - start)
 
         return goods_info
 
-    def __record(self, goods_info, time_span):
+    @staticmethod
+    def __record(goods_info, time_span):
         """统计http请求情况"""
 
-        self._mutex.acquire()
-        self._http_statistics['total'] = self._http_statistics['total'] + 1
-        self._http_statistics['total_time_span'] = self._http_statistics['total_time_span'] + time_span
-        self._http_statistics['total_avg_time'] = self._http_statistics['total_time_span'] / self._http_statistics['total']
+        HttpUtil._mutex.acquire()
+        HttpUtil.statistics['total'] = HttpUtil.statistics['total'] + 1
+        HttpUtil.statistics['total_time_span'] = HttpUtil.statistics['total_time_span'] + time_span
+        HttpUtil.statistics['total_avg_time'] = HttpUtil.statistics['total_time_span'] / HttpUtil.statistics['total']
 
         if goods_info:
-            self._http_statistics['success_time_span'] = self._http_statistics['success_time_span'] + time_span
-            self._http_statistics['success_avg_time'] = self._http_statistics['success_time_span'] / self._http_statistics['success']
+            HttpUtil.statistics['success_time_span'] = HttpUtil.statistics['success_time_span'] + time_span
+            HttpUtil.statistics['success_avg_time'] = HttpUtil.statistics['success_time_span'] / HttpUtil.statistics['success']
         else:
-            self._http_statistics['failed'] = self._http_statistics['failed'] + 1
-        self._mutex.release()
+            HttpUtil.statistics['failed'] = HttpUtil.statistics['failed'] + 1
+        HttpUtil._mutex.release()

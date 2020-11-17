@@ -4,6 +4,7 @@
 import time
 import logging
 import threading
+from sql.sqlcdfbj import SqlCdfBj
 
 
 logger = logging.getLogger(__name__)
@@ -11,12 +12,12 @@ logger = logging.getLogger(__name__)
 
 class SWorker(threading.Thread):
 
-    def __init__(self, name, config, sql_helper, http_util, ip_util, goods_id_list):
+    def __init__(self, name, config, http_util, ip_util, goods_id_list):
         threading.Thread.__init__(self)
         self.name = name
         self._running = True
         self._config = config
-        self._sql_helper = sql_helper
+        self._sql_helper = SqlCdfBj()
         self._http_util = http_util
         self._ip_util = ip_util
         self._goods_id_list = goods_id_list     # 负责查询的产品id

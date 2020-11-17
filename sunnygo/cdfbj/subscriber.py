@@ -14,13 +14,16 @@ class Subscriber(object):
     def __init__(self, config):
         self.name = 'cdfbj_subscriber'
         self._config = config
-        self._sql_helper = SqlCdfBj(config['DBCONFIG'])
+        self._sql_helper = SqlCdfBj()
 
     def init_sync_db(self):
         """初始化同步数据库"""
 
         sys_goods_list = reader.load_sys_goods_file(self._config['SYS_GOODS_FILE'])
         sys_user_dict = reader.load_sys_user_file(self._config['SYS_USER_FILE'])
+
+        # 开启会话
+        self._sql_helper.get_session()
 
         for user_id in sys_user_dict:
             # 更新db中的user表[用户存在则更新，不存在则插入新用户]
@@ -30,6 +33,9 @@ class Subscriber(object):
             for goods_id in sys_goods_list:
                 subscriber_info_item = {'good_id': goods_id, 'user_id': user_id}    # 其他参数使用默认值
                 self._sql_helper.insert_update_cdfbj_subscriber_info(subscriber_info_item)
+
+        # 结束会话
+        self._sql_helper.close_session()
 
     def __get_goods_id_subscribe_info(self):
         """获取cdf北京产品的订阅情况"""

@@ -1,10 +1,9 @@
 # coding: utf-8
 
-import logging
 from sql.base import *
 from db import session_cls
 from sqlalchemy import func
-from sqlalchemy import or_,and_
+from sqlalchemy import or_, and_
 
 
 logger = logging.getLogger(__name__)
@@ -14,7 +13,23 @@ class SqlCdfBj(object):
     """sql helper for cdf bj"""
 
     def __init__(self):
+        self._session = None
+
+    def get_session(self):
+        if self._session is not None:
+            self.close_session()
         self._session = session_cls()
+        return self._session
+
+    def close_session(self):
+        if self._session is not None:
+            try:
+                self._session.commit()
+                self._session.close()
+            except Exception as e:
+                logger.info('close session exception[{0}].'.format(e))
+                self._session.rollback()
+            self._session = None
 
     def insert_update_user(self, item):
         try:
@@ -26,7 +41,7 @@ class SqlCdfBj(object):
             else:
                 logger.info('insert new user[{0}].'.format(item))
                 user = User.from_item(item)
-                self.add(user)
+                self._session.add(user)
             self._session.commit()
             return True
         except Exception as e:
@@ -45,7 +60,7 @@ class SqlCdfBj(object):
             else:
                 logger.info('insert new cdfbj subscriber info[{0}].'.format(item))
                 info = CdfBjSubscriberInfo.from_item(item)
-                self.add(info)
+                self._session.add(info)
             self._session.commit()
             return True
         except Exception as e:
@@ -56,7 +71,7 @@ class SqlCdfBj(object):
     def insert_cdfbj_goods_info(self, item):
         try:
             goods_info = CdfBjGoodsInfo.from_item(item)
-            self.add(goods_info)
+            self._session.add(goods_info)
             self._session.commit()
             return True
         except Exception as e:
@@ -80,7 +95,7 @@ class SqlCdfBj(object):
                 .order_by(func.count('1').desc())
             return query.all()
         except Exception as e:
-            logger.exception('get_cdfbj_goods_id_subscribe_info exception[{0}].'.format(e))
+            logger.exception('get cdfbj goods id_subscribe info exception[{0}].'.format(e))
             self._session.rollback()
 
     def get_ip_activated(self, time_remaining=30):
@@ -93,6 +108,7 @@ class SqlCdfBj(object):
             return items
         except Exception as e:
             logger.exception('get ip activated[{0}] exception[{1}].'.format(time_remaining, e))
+            self._session.rollback()
 
     def get_cdfbj_goods_info(self, goods_id):
         try:
@@ -104,6 +120,7 @@ class SqlCdfBj(object):
                 return item
         except Exception as e:
             logger.exception('get cdfbj goods info[{0}] exception[{1}].'.format(goods_id, e))
+            self._session.rollback()
 
     @staticmethod
     def parse_goods_info(goods_id, goods_info):
