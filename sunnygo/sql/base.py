@@ -2,7 +2,7 @@
 
 import logging
 import datetime
-from ip_manager.db import Base
+from db import Base
 from sqlalchemy import Column, VARCHAR, INTEGER, TIMESTAMP, BIGINT, FLOAT
 
 
@@ -73,6 +73,29 @@ class CdfBjGoodsInfo(Base):
         return '<CdfBj Goods Info [{0}][{1}][{2}][{3}][{4}][{5}]>'.format(self.goods_id, self.goods_name,
                                                                           self.goods_status, self.goods_num,
                                                                           self.goods_price, self.goods_discount)
+
+    def to_item(self):
+        return {'goods_id': self.goods_id, 'goods_name': self.goods_name, 'goods_url': self.goods_url,
+                'goods_status': self.goods_status, 'goods_num': self.goods_num, 'goods_price': self.goods_price,
+                'goods_discount': self.goods_discount}
+
+    @staticmethod
+    def from_item(item):
+        return CdfBjGoodsInfo(
+            goods_id=item['goods_id'],
+            goods_name=item['goods_name'],
+            goods_url=item['goods_url'],
+            goods_status=item['goods_status'],
+            goods_num=item['goods_num'],
+            goods_price=item['goods_price'],
+            goods_discount=item['goods_discount']
+        )
+
+    @staticmethod
+    def parse(goods_id, goods_info):
+        return {'goods_id': goods_id, 'goods_name': goods_info['title'], 'goods_url': goods_info['url'],
+                'goods_status': goods_info['status'], 'goods_num': goods_info['stock'],
+                'goods_price': goods_info['price'], 'goods_discount': goods_info['discount']}
 
 
 class CdfBjSubscriberInfo(Base):

@@ -28,7 +28,7 @@ IP_MANAGER_CONFIG = {
             'interval': 360,        # 每次获取IP的时间间隔（单位：秒）
         },
         'horocn': {
-            'enabled': True,
+            'enabled': False,
             'ip_num': 10,
             'interval': 10,
         }

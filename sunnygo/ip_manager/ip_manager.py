@@ -18,7 +18,7 @@ class IpManager(object):
     def __init__(self, config):
         self.name = 'ip_manager'
         self.config = config
-        self.sql_helper = SqlIpManager(config['DBCONFIG'])
+        self.sql_helper = SqlIpManager()
         self.vendors = []
         for vendor_name in config.get('VENDORS', []):
             logger.info('vendor[{0}] with config[{1}].'.format(vendor_name, config['VENDORS'][vendor_name]))
@@ -45,6 +45,9 @@ class IpManager(object):
             logger.exception('[{0}] get local ip from url[{1}] exception[{2}].'.format(self.name, url, e))
 
     def __init(self):
+        # 开启会话
+        self.sql_helper.begin_session()
+
         self.seeker_info = self.sql_helper.query_seeker(self.name)
         ip = self.__get_local_ip()
 
@@ -64,6 +67,9 @@ class IpManager(object):
         # 更新各ip vendor
         for vendor in self.vendors:
             vendor.init_vendor(self.seeker_info['ip'])
+
+        # 结束会话
+        self.sql_helper.close_session()
 
     def __update(self):
         time_span = (datetime.datetime.now() - self.update_time).total_seconds()
@@ -113,8 +119,10 @@ class IpManager(object):
         while True:
             try:
                 time.sleep(10)
+                self.sql_helper.begin_session()
                 self.__push_ips()
                 self.__update()
+                self.sql_helper.close_session()
             except Exception as e:
                 logger.exception('execute [{0}] exception[{1}].'.format(self.name, e))
 

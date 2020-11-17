@@ -1,27 +1,38 @@
 # coding: utf-8
 
 
-import logging
 from sql.base import *
+from db import session_cls
 from sqlalchemy import func
-from sqlalchemy import or_,and_
-from sql.sqlutil import ISqlHelper
-from sqlalchemy.ext.declarative import declarative_base
 
 
-_Base = declarative_base()
 logger = logging.getLogger(__name__)
 
 
-class SqlIpManager(ISqlHelper):
+class SqlIpManager(object):
     """sql helper for ip manager"""
 
-    def __init__(self, config):
-        super(SqlIpManager, self).__init__(config)
+    def __init__(self):
+        self._session = None
+
+    def begin_session(self):
+        if self._session is not None:
+            self.close_session()
+        self._session = session_cls()
+
+    def close_session(self):
+        if self._session is not None:
+            try:
+                self._session.commit()
+                self._session.close()
+            except Exception as e:
+                logger.info('close session exception[{0}].'.format(e))
+                self._session.rollback()
+            self._session = None
 
     def query_seeker(self, seeker_id):
         try:
-            query = self.session.query(Seeker).filter(Seeker.id == seeker_id)
+            query = self._session.query(Seeker).filter(Seeker.id == seeker_id)
             seeker = query.first()
             if seeker is not None:
                 seeker_info = seeker.to_item()
@@ -32,7 +43,7 @@ class SqlIpManager(ISqlHelper):
 
     def update_seeker(self, seeker_info):
         try:
-            query = self.session.query(Seeker).filter(Seeker.id == seeker_info['id'])
+            query = self._session.query(Seeker).filter(Seeker.id == seeker_info['id'])
             seeker = query.first()
             if seeker is not None:
                 seeker.ip = seeker_info['ip']
@@ -40,19 +51,19 @@ class SqlIpManager(ISqlHelper):
             else:
                 seeker = Seeker(id=seeker_info['id'], ip=seeker_info['ip'],
                                 register_time=seeker_info['register_time'], tag=seeker_info['tag'])
-                self.add(seeker)
-            self.session.commit()
+                self._session.add(seeker)
+            self._session.commit()
             logger.info('update seeker[{0}] success.'.format(seeker_info))
             return True
         except Exception as e:
             logger.exception('update seeker[{0}] exception[{1}].'.format(seeker_info, e))
-            self.session.rollback()
+            self._session.rollback()
             return False
 
     def query_ip_activated(self, vendor, time_remaining=0):
         try:
             expire_time = datetime.datetime.now() + datetime.timedelta(seconds=time_remaining)
-            query = self.session.query(func.count('1')).filter(IpPool.vendor == vendor)\
+            query = self._session.query(func.count('1')).filter(IpPool.vendor == vendor)\
                 .filter(IpPool.expire_time >= expire_time)
             num = query.one()[0]
             logger.info('query ip activated[{0}|{1}] success[{2}].'.format(vendor, time_remaining, num))
@@ -64,22 +75,23 @@ class SqlIpManager(ISqlHelper):
         try:
             for ip_item in ip_items:
                 row = IpPool.from_item(item=ip_item)
-                self.add(row)
+                self._session.add(row)
+            self._session.commit()
             logger.info('insert ip pool[{0}] success.'.format(ip_items))
             return True
         except Exception as e:
             logger.exception('insert ip pool[{0}] exception[{1}].'.format(ip_items, e))
-            self.session.rollback()
+            self._session.rollback()
         return False
 
     def delete_stale_data(self, days=7):
         try:
             expire_time = datetime.datetime.now() - datetime.timedelta(days=days)
-            query = self.session.query(IpPool).filter(IpPool.expire_time < expire_time)
+            query = self._session.query(IpPool).filter(IpPool.expire_time < expire_time)
             query.delete()
-            self.session.commit()
+            self._session.commit()
             logger.info('delete stale data[{0}] success.'.format(days))
         except Exception as e:
             logger.exception('delete stale data[{0}] exception[{1}].'.format(days, e))
-            self.session.rollback()
+            self._session.rollback()
         return False

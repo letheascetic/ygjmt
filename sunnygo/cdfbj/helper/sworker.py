@@ -32,6 +32,8 @@ class SWorker(threading.Thread):
         self._mutex.release()
 
     def __get_goods_info(self, goods_id):
+        """获取产品详情"""
+
         ip_item = None
 
         # 确认是否使用IP代理，若使用则获取一个IP Proxy
@@ -51,6 +53,14 @@ class SWorker(threading.Thread):
             self._ip_util.feedback(ip_item, goods_info)
 
         return goods_info
+
+    def __check_goods_info(self, goods_id, goods_info):
+        goods_item = self._sql_helper.get_cdfbj_goods_info(goods_id)
+        new_goods_item = self._sql_helper.parse_goods_info(goods_id, goods_info)
+        # 新的商品，直接插入CdfBjGoodsInfo
+        if goods_item is None:
+
+
 
     def run(self):
         i = 0

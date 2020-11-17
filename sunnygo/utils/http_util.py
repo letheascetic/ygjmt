@@ -33,7 +33,6 @@ class HttpUtil(object):
         goods_info['url'] = 'https://m.yuegowu.com/goods-detail/{0}'.format(goods_id)
         start = time.time()
         try:
-
             response = self._http_util.getGoodsInfo(url, host, port)
             content = json.loads(str(response))         # 如果返回的是html，在这一步会发生exception
 
@@ -65,11 +64,11 @@ class HttpUtil(object):
             logger.exception('cdfbj get goods info[{0}] with ip proxy[{1}:{2}] exception[{3}].'.format(url, host, port, e))
             goods_info = None
 
-        self.__reocrd(goods_info, time.time() - start)
+        self.__record(goods_info, time.time() - start)
 
         return goods_info
 
-    def __reocrd(self, goods_info, time_span):
+    def __record(self, goods_info, time_span):
         """统计http请求情况"""
 
         self._mutex.acquire()
