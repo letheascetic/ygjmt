@@ -4,7 +4,9 @@
 import time
 import logging
 import threading
+from utils.ip_util import IpUtil
 from sql.sqlcdfbj import SqlCdfBj
+from utils.http_util import HttpUtil
 
 
 logger = logging.getLogger(__name__)
@@ -12,15 +14,15 @@ logger = logging.getLogger(__name__)
 
 class SWorker(threading.Thread):
 
-    def __init__(self, name, config, http_util, ip_util, goods_id_list):
+    def __init__(self, name, config, goods_id_list):
         threading.Thread.__init__(self)
         self.name = name
         self._running = True
         self._config = config
         self._sql_helper = SqlCdfBj()
-        self._http_util = http_util
-        self._ip_util = ip_util
-        self._goods_id_list = goods_id_list     # 负责查询的产品id
+        self._http_util = HttpUtil(config)
+        self._ip_util = IpUtil(config, self._sql_helper)    #
+        self._goods_id_list = goods_id_list                 # 负责查询的产品id
         self._update_time = None
         self._mutex = threading.Lock()
 
@@ -59,9 +61,6 @@ class SWorker(threading.Thread):
         goods_item = self._sql_helper.get_cdfbj_goods_info(goods_id)
         new_goods_item = self._sql_helper.parse_goods_info(goods_id, goods_info)
         # 新的商品，直接插入CdfBjGoodsInfo
-        if goods_item is None:
-
-
 
     def run(self):
         i = 0

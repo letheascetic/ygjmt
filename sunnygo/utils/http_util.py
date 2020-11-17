@@ -17,6 +17,7 @@ jpype.startJVM(jvm_path, "-Djava.class.path={0}".format(jar_path))
 
 class HttpUtil(object):
 
+    # 静态成员/变量
     statistics = {'total': 0, 'success': 0, 'failed': 0, 'total_time_span': 0.0,
                   'success_time_span': 0.0, 'total_avg_time': 0.0, 'success_avg_time': 0.0}
     _mutex = threading.Lock()

@@ -25,7 +25,7 @@ class IpUtil(object):
 
         # 每隔指定的时间，更新本地ip
         if self._update_time is None or (time.time() - self._update_time) > 10:
-            ip_items = self._sql_helper.get_ip_activated(time_remaining=60)
+            ip_items = self._sql_helper.get_ip_activated(time_remaining=30)
             if ip_items:
                 self._ip_items = ip_items
 
