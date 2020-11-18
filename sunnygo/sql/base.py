@@ -61,7 +61,7 @@ class CdfBjGoodsInfo(Base):
     __tablename__ = 'cdfbj_goods_info'
 
     goods_id = Column('goods_id', VARCHAR(64), primary_key=True, nullable=False)    # 商品id
-    goods_name = Column('goods_name', VARCHAR(256), nullable=False)                 # 商品名
+    goods_name = Column('goods_name', VARCHAR(256), nullable=True, default=None)    # 商品名
     goods_url = Column('goods_url', VARCHAR(1024), nullable=False)                  # 商品链接
     goods_status = Column('goods_status', VARCHAR(64), nullable=False, index=True)  # 商品状态[在售、下架、缺货]
     goods_num = Column('goods_num', INTEGER, nullable=True, default=0)              # 商品库存
@@ -160,10 +160,10 @@ class CdfBjUserInfo(Base):
     __tablename__ = 'cdfbj_user_info'
 
     id = Column('id', BIGINT, primary_key=True, autoincrement=True, nullable=False)
-    user_id = Column(VARCHAR(64), index=True, nullable=False)                           # 对应的用户id
-    login_name = Column(VARCHAR(64), index=True, nullable=False)                        # 北京cdf登录名
-    login_passwd = Column(VARCHAR(64), index=False, nullable=False)                     # 北京cdf登录密码
-    status = Column(INTEGER, index=False, nullable=False, default=0)                    # 账户当前状态[0:正常, 1:密码错误, 2:没有额度 3:其他]
+    user_id = Column('user_id', VARCHAR(64), index=True, nullable=False)             # 对应的用户id
+    login_name = Column('login_name', VARCHAR(64), index=True, nullable=False)       # 北京cdf登录名
+    login_passwd = Column('login_passwd', VARCHAR(64), index=False, nullable=False)  # 北京cdf登录密码
+    status = Column('status', INTEGER, index=True, nullable=False, default=0)       # 账户当前状态[0:正常, 1:密码错误, 2:没有额度 3:其他]
     update_time = Column('update_time', TIMESTAMP, nullable=False, onupdate=datetime.datetime.now, default=datetime.datetime.now)
 
 
@@ -171,13 +171,13 @@ class User(Base):
     """table for user, 用于表述各用户的信息，包括用户id、昵称、邮箱、邮箱授权码、邮箱状态、密码、注册时间等"""
     __tablename__ = 'user'
 
-    id = Column(VARCHAR(64), primary_key=True, nullable=False)                      # 用户id，唯一
-    name = Column(VARCHAR(128), unique=True, nullable=False)                        # 昵称
-    email = Column(VARCHAR(128), index=True, nullable=True, default=None)           # 邮箱
-    email_code = Column(VARCHAR(64), index=False, nullable=True, default=None)      # 邮箱授权码
-    email_status = Column(INTEGER, default=0)                                       # 邮箱是否可用[0:正常 1:授权码有误]
-    password = Column(VARCHAR(256), nullable=False)                                 # 登录密码
-    register_time = Column(TIMESTAMP, nullable=False, default=datetime.datetime.now)    # 注册时间
+    id = Column('id', VARCHAR(64), primary_key=True, nullable=False)                        # 用户id，唯一
+    name = Column('name', VARCHAR(128), unique=True, nullable=False)                        # 昵称
+    email = Column('email', VARCHAR(128), index=True, nullable=True, default=None)          # 邮箱
+    email_code = Column('email_code', VARCHAR(64), index=False, nullable=True, default=None)    # 邮箱授权码
+    email_status = Column('email_status', INTEGER, default=0)                                   # 邮箱是否可用[0:正常 1:授权码有误]
+    password = Column('password', VARCHAR(256), nullable=False)                                 # 登录密码
+    register_time = Column('register_time', TIMESTAMP, nullable=False, default=datetime.datetime.now)    # 注册时间
 
     def __repr__(self):
         return '<User [id:{0}][name:{1}][email:{2}]>'.format(self.id, self.name, self.email)

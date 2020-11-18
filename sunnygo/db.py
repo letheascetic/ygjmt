@@ -20,7 +20,7 @@ Base = declarative_base()
 
 
 def init_db():
-    from sql.base import IpPool, Seeker
+    from sql.base import CdfBjUserInfo
     Base.metadata.create_all(bind=engine)
     pass
 
