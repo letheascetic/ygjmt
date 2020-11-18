@@ -26,13 +26,13 @@ class Subscriber(object):
         # 开启会话
         session = self._sql_helper.create_session()
 
-        for user_id in sys_user_dict:
+        for user_id in sys_user_dict.keys():
             # 更新db中的user表[用户存在则更新，不存在则插入新用户]
             self._sql_helper.insert_update_user(session, sys_user_dict[user_id])
 
             # 更新db中的cdfbj_subscriber_info表，为用户更新或添加对应的订阅信息
             for goods_id in sys_goods_list:
-                subscriber_info_item = {'good_id': goods_id, 'user_id': user_id}    # 其他参数使用默认值
+                subscriber_info_item = {'goods_id': goods_id, 'user_id': user_id}    # 其他参数使用默认值
                 self._sql_helper.insert_update_cdfbj_subscriber_info(session, subscriber_info_item)
 
         # 结束会话
@@ -76,7 +76,7 @@ class Subscriber(object):
         return distributed_goods_id_list
 
     def execute(self):
-        self.init_sync_db()
+        # self.init_sync_db()
 
         distributed_goods_id_list = self.__distribute_subscribe_tasks()
         workers = []

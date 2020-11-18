@@ -172,7 +172,7 @@ class User(Base):
     __tablename__ = 'user'
 
     id = Column('id', VARCHAR(64), primary_key=True, nullable=False)                        # 用户id，唯一
-    name = Column('name', VARCHAR(128), unique=True, nullable=False)                        # 昵称
+    name = Column('name', VARCHAR(128), index=True, nullable=False)                        # 昵称
     email = Column('email', VARCHAR(128), index=True, nullable=True, default=None)          # 邮箱
     email_code = Column('email_code', VARCHAR(64), index=False, nullable=True, default=None)    # 邮箱授权码
     email_status = Column('email_status', INTEGER, default=0)                                   # 邮箱是否可用[0:正常 1:授权码有误]
