@@ -3,6 +3,7 @@
 import logging
 
 
+# 日志配置项
 LOG_CONFIG = {
     'LOG_DIR': 'log/',
     'LOG_FILE_SIZE': 20*1024*1024,

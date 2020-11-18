@@ -6,8 +6,8 @@ import random
 import logging
 import threading
 from utils.mailer import Mailer
-from utils.ip_util import IpUtil
 from sqlalchemy import or_, and_
+from utils.ip_util import IpUtil
 from sql.sqlcdfbj import SqlCdfBj
 from utils.http_util import HttpUtil
 from sql.base import CdfBjGoodsInfo, CdfBjSubscriberInfo, User
@@ -25,10 +25,10 @@ class SWorker(threading.Thread):
         self._config = config
         self._sql_helper = SqlCdfBj()
         self._http_util = HttpUtil(config)
-        self._ip_util = IpUtil(config, self._sql_helper)
         self._mailer = Mailer(config)
         self._goods_id_list = goods_id_list                 # 负责查询的产品id
         self._update_time = None
+        self._ip_util = IpUtil(config)
         self._mutex = threading.Lock()
 
     def stop(self):
@@ -113,7 +113,7 @@ class SWorker(threading.Thread):
             except Exception as e:
                 logger.info('check goods info[{0}] exception[{1}].'.format(goods_info, e))
 
-    def __mail_subscribers(self, goods_id, goods_info, subscriber_user_id_list):
+    def __mail_subscribers(self, goods_info, subscriber_user_id_list):
         user_id_both = subscriber_user_id_list[0].intersection(subscriber_user_id_list[1])
         user_id_replenishment = subscriber_user_id_list[0] - subscriber_user_id_list[1]
         user_id_discount = subscriber_user_id_list[1] - subscriber_user_id_list[0]
@@ -165,7 +165,7 @@ class SWorker(threading.Thread):
                     continue
 
                 # 发送邮件
-                self.__mail_subscribers(goods_id, goods_info, subscriber_user_id_list)
+                self.__mail_subscribers(goods_info, subscriber_user_id_list)
 
                 if self._config.get('INTERVAL_ENABLE', True):
                     time.sleep(random.random() * self._config.get('TIME_INTERVAL', 0.5) * 2)

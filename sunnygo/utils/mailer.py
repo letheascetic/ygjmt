@@ -37,8 +37,6 @@ class Mailer(object):
             logger.info('user[{0}] has no email, no need to send mail.')
             return {'code': 0, 'msg': 'no email', 'mailer': None}
 
-        response['mailer'] = from_addr
-
         content = {'商品': goods_info['title'], '状态': goods_info['status'], '库存': goods_info['stock'],
                    '价格': goods_info['price'], '折扣': goods_info['discount'], '链接': goods_info['url']}
         content = str(content)

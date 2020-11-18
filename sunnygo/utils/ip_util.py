@@ -4,16 +4,18 @@ import time
 import random
 import logging
 import threading
+from sql.base import IpPool
+from sql.sqlcdfbj import SqlCdfBj
 
 
 logger = logging.getLogger(__name__)
 
 
 class IpUtil(object):
-    def __init__(self, config, sql_helper):
+    def __init__(self, config):
         self.name = 'ip_util'
         self._config = config
-        self._sql_helper = sql_helper
+        self._sql_helper = SqlCdfBj()
         self._update_time = None
         self._ip_items = []
         self._mutex = threading.Lock()
@@ -23,11 +25,19 @@ class IpUtil(object):
         if not self._config.get('PROXY_ENABLE', True):
             return None
 
-        # 每隔指定的时间，更新本地ip
+        # 每隔指定的时间，更新本地ip，并将Ip Proxy的访问成功次数和失败次数同步到db
         if self._update_time is None or (time.time() - self._update_time) > 10:
-            ip_items = self._sql_helper.get_ip_activated(time_remaining=30)
-            if ip_items:
-                self._ip_items = ip_items
+            ip_id_list = [ip['id'] for ip in self._ip_items]
+            with self._sql_helper.session_cls() as session:
+                query = session.query(IpPool).filter(IpPool.id.in_(ip_id_list))
+                for ip_data in query.all():
+                    ip_index = ip_id_list.index(ip_data.id)
+                    ip_data.success_num = ip_data.success_num + self._ip_items[ip_index]['success_num']
+                    ip_data.failed_num = ip_data.failed_num + self._ip_items[ip_index]['failed_num']
+
+                session.commit()
+
+                self._ip_items = self._sql_helper.get_ip_activated(session, time_remaining=30)
 
         # 没有可用ip，返回None
         if not self._ip_items:

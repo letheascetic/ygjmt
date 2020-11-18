@@ -82,13 +82,6 @@ class SqlCdfBj(object):
             return False
 
     @staticmethod
-    def update_cdfbj_goods_info(session):
-        try:
-            pass
-        except Exception as e:
-            logger.exception('update ')
-
-    @staticmethod
     def get_cdfbj_goods_id_subscribe_info(session):
         """获取cdf北京产品（补货提醒or折扣提醒）的订阅信息"""
 
