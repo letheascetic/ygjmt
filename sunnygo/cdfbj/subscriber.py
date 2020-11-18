@@ -23,24 +23,26 @@ class Subscriber(object):
         sys_user_dict = reader.load_sys_user_file(self._config['SYS_USER_FILE'])
 
         # 开启会话
-        self._sql_helper.get_session()
+        session = self._sql_helper.create_session()
 
         for user_id in sys_user_dict:
             # 更新db中的user表[用户存在则更新，不存在则插入新用户]
-            self._sql_helper.insert_update_user(sys_user_dict[user_id])
+            self._sql_helper.insert_update_user(session, sys_user_dict[user_id])
 
             # 更新db中的cdfbj_subscriber_info表，为用户更新或添加对应的订阅信息
             for goods_id in sys_goods_list:
                 subscriber_info_item = {'good_id': goods_id, 'user_id': user_id}    # 其他参数使用默认值
-                self._sql_helper.insert_update_cdfbj_subscriber_info(subscriber_info_item)
+                self._sql_helper.insert_update_cdfbj_subscriber_info(session, subscriber_info_item)
 
         # 结束会话
-        self._sql_helper.close_session()
+        self._sql_helper.close_session(session)
 
     def __get_goods_id_subscribe_info(self):
         """获取cdf北京产品的订阅情况"""
-
-        return self._sql_helper.get_cdfbj_goods_id_subscribe_info()
+        session = self._sql_helper.create_session()
+        subscribe_info = self._sql_helper.get_cdfbj_goods_id_subscribe_info(session)
+        self._sql_helper.close_session(session)
+        return subscribe_info
 
     def __distribute_subscribe_tasks(self):
         """将要订阅的产品分配到不同的Worker"""
@@ -49,6 +51,7 @@ class Subscriber(object):
         worker_num = self._config.get('WORKER_NUM', 1)
 
         # 获取订阅产品的订阅情况
+
         subscribe_info = self.__get_goods_id_subscribe_info()
 
         # 根据订阅人数比例重组产品id，生成goods_id_list
@@ -70,4 +73,3 @@ class Subscriber(object):
             distributed_goods_id_list.append(goods_id_slice)
 
         return distributed_goods_id_list
-

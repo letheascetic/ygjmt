@@ -43,7 +43,17 @@ CDFBJ_SUBSCRIBER_CONFIG = {
     'SYS_USER_FILE': '管理员权限北京日上订阅用户.xlsx',
     'SYS_GOODS_FILE': '管理员权限北京日上订阅.xlsx',
     'WORKER_NUM': 10,
-    'PROXY_ENABLE': True
+    'PROXY_ENABLE': True,
+    'INTERVAL_ENABLE': False,
+    'TIME_INTERVAL': 0.3,
+    'SERVER_MAILERS': [
+        {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},  # cdfbj_vx1
+        # {"email": 'letheascetic@163.com', 'code': 'BGDAEEMWDFDGBRVQ'},        # cdfbj_vx1
+        {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},  # cdfbj_vx2
+        {"email": 'cdf_bj_updater_3@163.com', 'code': 'OAJFKDISCBDVRGJE'},  # cdfbj
+        {"email": 'cdf_bj_updater_4@163.com', 'code': 'SJPLBCHBKHIIQCLF'},  # cdfbj_4
+    ],
+    'SYS_MAILER': {"email": '3219276656@qq.com', 'code': 'gcagfrrfnbhndejj'},
 }
 
 

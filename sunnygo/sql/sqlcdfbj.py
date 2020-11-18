@@ -13,7 +13,7 @@ class SqlCdfBj(object):
     """sql helper for cdf bj"""
 
     def __init__(self):
-        pass
+        self.session_cls = session_cls
 
     @staticmethod
     def create_session():

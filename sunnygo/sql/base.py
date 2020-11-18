@@ -74,6 +74,15 @@ class CdfBjGoodsInfo(Base):
                                                                           self.goods_status, self.goods_num,
                                                                           self.goods_price, self.goods_discount)
 
+    def update(self, item):
+        if not self.goods_name and item['goods_name']:
+            self.goods_name = item['goods_name']
+
+        self.goods_status = item['goods_status']
+        self.goods_num = item['goods_num']
+        self.goods_price = item['goods_price']
+        self.goods_discount = item['goods_discount']
+
     def to_item(self):
         return {'goods_id': self.goods_id, 'goods_name': self.goods_name, 'goods_url': self.goods_url,
                 'goods_status': self.goods_status, 'goods_num': self.goods_num, 'goods_price': self.goods_price,
@@ -120,18 +129,18 @@ class CdfBjSubscriberInfo(Base):
     def update(self, item):
         replenishment_switch_updated = False
 
-        if item.get('replenishment_switch', None) and item['replenishment_switch'] != self.replenishment_switch:
+        if 'replenishment_switch' in item.keys() and item['replenishment_switch'] != self.replenishment_switch:
             replenishment_switch_updated = True
             self.replenishment_switch = item['replenishment_switch']
 
-        if item.get('replenishment_threshold', None) and item['replenishment_threshold'] != self.replenishment_threshold:
+        if 'replenishment_threshold' in item.keys() and item['replenishment_threshold'] != self.replenishment_threshold:
             self.replenishment_threshold = item['replenishment_threshold']
 
         # 补货提醒开关被更新，无条件更新replenishment_flag为0[需要提醒]状态
         if replenishment_switch_updated:
             self.replenishment_flag = 0
 
-        if item.get('discount_switch', None) and item['discount_switch'] != self.discount_switch:
+        if 'discount_switch' in item.keys() and item['discount_switch'] != self.discount_switch:
             self.discount_switch = item['discount_switch']
 
     @staticmethod
