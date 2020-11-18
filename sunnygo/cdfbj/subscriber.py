@@ -4,6 +4,7 @@ import random
 import logging
 from utils import reader
 from sql.sqlcdfbj import SqlCdfBj
+from cdfbj.helper.sworker import SWorker
 
 
 logger = logging.getLogger(__name__)
@@ -73,3 +74,17 @@ class Subscriber(object):
             distributed_goods_id_list.append(goods_id_slice)
 
         return distributed_goods_id_list
+
+    def execute(self):
+        self.init_sync_db()
+
+        distributed_goods_id_list = self.__distribute_subscribe_tasks()
+        workers = []
+
+        for i in range(0, len(distributed_goods_id_list)):
+            worker = SWorker('worker[{0}]'.format(i+1), self._config, distributed_goods_id_list[i])
+            workers.append(worker)
+            worker.start()
+
+        for worker in workers:
+            worker.join()

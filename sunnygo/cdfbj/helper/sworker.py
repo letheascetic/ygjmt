@@ -153,7 +153,6 @@ class SWorker(threading.Thread):
             goods_id_list = self._goods_id_list.copy()
             self._mutex.release()
 
-            # 对于每个
             for goods_id in goods_id_list:
                 # 获取产品详情
                 goods_info = self.__get_goods_info(goods_id)
@@ -167,5 +166,6 @@ class SWorker(threading.Thread):
 
                 # 发送邮件
                 self.__mail_subscribers(goods_id, goods_info, subscriber_user_id_list)
+
                 if self._config.get('INTERVAL_ENABLE', True):
                     time.sleep(random.random() * self._config.get('TIME_INTERVAL', 0.5) * 2)

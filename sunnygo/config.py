@@ -33,18 +33,18 @@ IP_MANAGER_CONFIG = {
             'interval': 10,
         }
     },
-    'DBCONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
+    'DB_CONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
 }
 
 
 # CDF北京订阅服务配置项
 CDFBJ_SUBSCRIBER_CONFIG = {
-    'DBCONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
+    'DB_CONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
     'SYS_USER_FILE': '管理员权限北京日上订阅用户.xlsx',
     'SYS_GOODS_FILE': '管理员权限北京日上订阅.xlsx',
-    'WORKER_NUM': 10,
+    'WORKER_NUM': 1,
     'PROXY_ENABLE': True,
-    'INTERVAL_ENABLE': False,
+    'INTERVAL_ENABLE': True,
     'TIME_INTERVAL': 0.3,
     'SERVER_MAILERS': [
         {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},  # cdfbj_vx1
