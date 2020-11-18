@@ -23,10 +23,19 @@ class IpPool(Base):
     failed_num = Column('failed_num', INTEGER, nullable=True, default=0)
     success_num = Column('success_num', INTEGER, nullable=True, default=0)
 
-    def to_item(self):
-        return {'id': self.id, 'ip': self.ip, 'port': self.port, 'city': self.city, 'vendor': self.vendor,
-                'create_time': self.create_time, 'expire_time': self.expire_time, 'failed_num': self.failed_num,
-                'success_num': self.success_num}
+    def __repr__(self):
+        return '<Ip Pool [{0}][{1}][{2}][{3}][{4}][{5}][{6}]>'.format(self.id, self.ip, self.port, self.city,
+                                                                      self.vendor, self.failed_num, self.success_num)
+
+    def to_item(self, with_record=True):
+        if with_record:
+            return {'id': self.id, 'ip': self.ip, 'port': self.port, 'city': self.city, 'vendor': self.vendor,
+                    'create_time': self.create_time, 'expire_time': self.expire_time, 'failed_num': self.failed_num,
+                    'success_num': self.success_num}
+        else:
+            return {'id': self.id, 'ip': self.ip, 'port': self.port, 'city': self.city, 'vendor': self.vendor,
+                    'create_time': self.create_time, 'expire_time': self.expire_time, 'failed_num': 0,
+                    'success_num': 0}
 
     @staticmethod
     def from_item(item):

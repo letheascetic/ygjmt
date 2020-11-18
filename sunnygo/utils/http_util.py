@@ -38,8 +38,8 @@ class HttpUtil(object):
         try:
             response = self._http_util.getGoodsInfo(url, host, port)
             content = json.loads(str(response))         # 如果返回的是html，在这一步会发生exception
-
-            code = content.get('code', None)
+            logger.info('cdfbj get goods info[{0}] with ip proxy[{1}:{2}] response[{3}].'.format(url, host, port, content))
+            code = str(content['code'])
             # 商品已下架
             if code == 'K-030007':
                 goods_info['status'] = '下架'
@@ -81,6 +81,7 @@ class HttpUtil(object):
         HttpUtil.statistics['total_avg_time'] = HttpUtil.statistics['total_time_span'] / HttpUtil.statistics['total']
 
         if goods_info:
+            HttpUtil.statistics['success'] = HttpUtil.statistics['success'] + 1
             HttpUtil.statistics['success_time_span'] = HttpUtil.statistics['success_time_span'] + time_span
             HttpUtil.statistics['success_avg_time'] = HttpUtil.statistics['success_time_span'] / HttpUtil.statistics['success']
         else:
