@@ -91,6 +91,7 @@ class SqlIpManager(object):
             query.delete()
             self._session.commit()
             logger.info('delete stale data[{0}] success.'.format(days))
+            return True
         except Exception as e:
             logger.exception('delete stale data[{0}] exception[{1}].'.format(days, e))
             self._session.rollback()

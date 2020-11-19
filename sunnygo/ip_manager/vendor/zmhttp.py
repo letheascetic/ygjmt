@@ -104,11 +104,19 @@ class ZmHttp(object):
     def add_to_white_list(self, ip):
         try:
             url = 'http://wapi.http.cnapi.cc/index/index/save_white?neek=158245&appkey=237d0703818d39a61a4153c2dd8b3aff&white={ip}'.format(ip=ip)
-            r = requests.get(url, timeout=10)
-            if r.status_code == requests.codes.ok:
-                content = json.loads(r.text)
-                logger.info('[{0}] add ip[{1}] to white list response[{2}].'.format(self.vendor, ip, content))
-                return content
+            i = 0
+            while i < 2:
+                i = i + 1
+                r = requests.get(url, timeout=10)
+                if r.status_code == requests.codes.ok:
+                    content = json.loads(r.text)
+                    logger.info('[{0}] add ip[{1}] to white list response[{2}].'.format(self.vendor, ip, content))
+                    if content.get('code', None) == 0:
+                        return True
+                    else:
+                        time.sleep(3)
+                        continue
+            return False
         except Exception as e:
             logger.exception('[{0}] add ip[{1}] to white list exception[{2}].'.format(self.vendor, ip, e))
 

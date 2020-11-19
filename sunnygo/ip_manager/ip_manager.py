@@ -6,6 +6,7 @@ import logging
 import datetime
 import requests
 from utils import util
+from functools import reduce
 from sql.sqlim import SqlIpManager
 from ip_manager.vendor.zmhttp import ZmHttp
 from ip_manager.vendor.horocn import Horocn
@@ -20,6 +21,7 @@ class IpManager(object):
         self.config = config
         self.sql_helper = SqlIpManager()
         self.vendors = []
+        self._vender_initialized = True
         for vendor_name in config.get('VENDORS', []):
             logger.info('vendor[{0}] with config[{1}].'.format(vendor_name, config['VENDORS'][vendor_name]))
             if config['VENDORS'][vendor_name]['enabled']:
@@ -68,12 +70,22 @@ class IpManager(object):
         for vendor in self.vendors:
             vendor.init_vendor(self.seeker_info['ip'])
 
+        self._vender_initialized = reduce(lambda x, y: x and y, [vendor.vendor_initialized for vendor in self.vendors])
+
         # 结束会话
         self.sql_helper.close_session()
 
     def __update(self):
+        # 如果有vendor初始化没成功，则尝试再次初始化
+        if not self._vender_initialized:
+            ip = self.__get_local_ip()
+            if ip is not None:
+                self._vender_initialized = reduce(
+                    lambda x, y: x and y,
+                    [vendor.init_vendor(ip) for vendor in self.vendors if not vendor.vendor_initialized])
+
         time_span = (datetime.datetime.now() - self.update_time).total_seconds()
-        if time_span < 600:
+        if time_span < 300:
             return
 
         # 日期改变，则清除过时的数据
