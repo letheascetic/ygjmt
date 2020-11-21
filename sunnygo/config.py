@@ -16,7 +16,7 @@ LOG_CONFIG = {
 # 数据库配置项
 MYSQL_CONFIG_TESTING = {
     'DB_CONNECT_TYPE': 'sqlalchemy',
-    'DB_CONNECT_STRING': 'mysql+pymysql://ascetic:ascetic@127.0.0.1:3306/ygjmt_db?charset=utf8mb4'
+    'DB_CONNECT_STRING': 'mysql+pymysql://ascetic:ascetic@192.168.125.2:3306/ygjmt_db?charset=utf8mb4'
 }
 
 
@@ -24,12 +24,12 @@ MYSQL_CONFIG_TESTING = {
 IP_MANAGER_CONFIG = {
     'VENDORS': {
         'zmhttp': {
-            'enabled': True,        # 是否使用该IP供应商
+            'enabled': False,       # 是否使用该IP供应商
             'ip_num': 3,            # 每次获取IP的数量
             'interval': 360,        # 每次获取IP的时间间隔（单位：秒）
         },
         'horocn': {
-            'enabled': False,
+            'enabled': True,
             'ip_num': 10,
             'interval': 10,
         }
@@ -43,9 +43,9 @@ CDFBJ_SUBSCRIBER_CONFIG = {
     'DB_CONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
     'SYS_USER_FILE': '管理员权限北京日上订阅用户.xlsx',
     'SYS_GOODS_FILE': '管理员权限北京日上订阅.xlsx',
-    'WORKER_NUM': 1,
+    'WORKER_NUM': 12,
     'PROXY_ENABLE': True,
-    'INTERVAL_ENABLE': True,
+    'INTERVAL_ENABLE': False,
     'TIME_INTERVAL': 0.1,
     'SERVER_MAILERS': [
         {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},  # cdfbj_vx1
