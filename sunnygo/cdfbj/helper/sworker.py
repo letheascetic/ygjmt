@@ -48,6 +48,7 @@ class SWorker(threading.Thread):
         if self._config.get('PROXY_ENABLE', True):
             ip_item = self._ip_util.get_proxy()
             if not ip_item:
+                time.sleep(5)
                 return None
             host, port = ip_item['ip'], ip_item['port']
         else:

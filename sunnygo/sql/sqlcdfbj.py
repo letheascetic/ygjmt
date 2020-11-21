@@ -102,7 +102,7 @@ class SqlCdfBj(object):
             query = session.query(IpPool)\
                 .filter(IpPool.expire_time >= expire_time)
             items = [ip.to_item(with_record=False) for ip in query.all() if ip.failed_num <= 20]
-            logger.info('get ip activated[{0}] success[{1}].'.format(time_remaining, items))
+            logger.info('get ip activated[{0}] success[{1}].'.format(time_remaining, len(items)))
             return items
         except Exception as e:
             logger.exception('get ip activated[{0}] exception[{1}].'.format(time_remaining, e))

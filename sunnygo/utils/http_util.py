@@ -78,7 +78,7 @@ class HttpUtil(object):
     def __record(self, goods_info, time_span):
         """统计http请求情况"""
 
-        self._mutex.acquire()
+        # self._mutex.acquire()
         self._statistics['total'] = self._statistics['total'] + 1
         self._statistics['total_time_span'] = self._statistics['total_time_span'] + time_span
         self._statistics['total_avg_time'] = self._statistics['total_time_span'] / self._statistics['total']
@@ -89,7 +89,10 @@ class HttpUtil(object):
             self._statistics['success_avg_time'] = self._statistics['success_time_span'] / self._statistics['success']
         else:
             self._statistics['failed'] = self._statistics['failed'] + 1
-        self._mutex.release()
+        # self._mutex.release()
+
+        if self._statistics['total'] % 200 == 0:
+            self.log()
 
     def log(self):
         logger.info('http statistics[total:{0}][success:{1}][failed:{2}]'.format(
