@@ -55,7 +55,8 @@ class SWorker(threading.Thread):
 
         # 获取产品详情
         goods_info = self._http_util.cdfbj_get_goods_info(goods_id, host, port)
-        logger.info('cdfbj get goods info with ip proxy[{0}:{1}] response[{2}].'.format(host, port, goods_info))
+        if goods_info is not None:
+            logger.info('cdfbj get goods info with ip proxy[{0}:{1}] response[{2}].'.format(host, port, goods_info))
 
         # 如果使用IP代理，则记录访问结果
         if self._config.get('PROXY_ENABLE', True):
@@ -79,6 +80,7 @@ class SWorker(threading.Thread):
                 return subscriber_user_id_list
             # 原有的商品，则更新该商品在db中的数据
             else:
+                old_goods_item = goods_data.to_item()
                 goods_data.update(new_goods_item)
                 session.commit()
 
@@ -107,7 +109,7 @@ class SWorker(threading.Thread):
                 # 折扣提醒是开启的
                 if subscriber_data.discount_switch:
                     # 折扣有变动：价格变动或折扣变动，则将该用户添加到折扣提醒邮件发送队列
-                    if goods_data.goods_discount != new_goods_item['goods_discount'] or goods_data.goods_price != new_goods_item['goods_price']:
+                    if old_goods_item['goods_discount'] != new_goods_item['goods_discount'] or old_goods_item['goods_price'] != new_goods_item['goods_price']:
                         subscriber_user_id_list[1].add(subscriber_data.user_id)
 
             session.commit()
@@ -127,20 +129,27 @@ class SWorker(threading.Thread):
         if not user_id_list:
             return
 
+        logger.info('goods[{0}] send mail to users[{1}].'.format(goods_info, subscriber_user_id_list))
+        mail_title = '{0} 折扣或补货提醒'.format(goods_info['title'])
+        self._mailer.send_sys_subscriber_mail(mail_title, goods_info, user_id_list)
+
         session = self._sql_helper.create_session()
         try:
-            query = session.query(User).filter(User.id.in_(user_id_list)).filter(User.email)
-            user_all_list = random.shuffle([user for user in query.all()])
+            query = session.query(User).filter(User.id.in_(user_id_list)).filter(User.email.isnot(None))
+            user_all_list = [user for user in query.all()]
+            random.shuffle(user_all_list)
 
             for user_data in user_all_list:
                 if user_data.id in user_id_both:
-                    mail_title = '{0} 折扣和补货提醒'.format(goods_info['title'])
+                    mail_title = '{0} 折扣[或价格]和补货提醒'.format(goods_info['title'])
                 elif user_data.id in user_id_replenishment:
                     mail_title = '{0} 补货提醒'.format(goods_info['title'])
                 else:
-                    mail_title = '{0} 折扣提醒'.format(goods_info['title'])
+                    mail_title = '{0} 折扣[或价格]变更提醒'.format(goods_info['title'])
 
-                self._mailer.send_subscriber_mail(user_data, mail_title, goods_info)
+                response = self._mailer.send_subscriber_mail(user_data, mail_title, goods_info)
+                if response['code'] != 0:
+                    user_data.email_status = 1
 
         except Exception as e:
             logger.exception('goods[{0}] mail subscribers[{1}] exception[{2}].'.format(
@@ -162,6 +171,7 @@ class SWorker(threading.Thread):
 
             for goods_id in goods_id_list:
                 # 获取产品详情
+
                 goods_info = self.__get_goods_info(goods_id)
                 if goods_info is None:
                     continue
@@ -179,4 +189,4 @@ class SWorker(threading.Thread):
 
             if (time.time() - self._update_time) > 600:
                 self._update_time = time.time()
-                HttpUtil.log()
+                self._http_util.log()

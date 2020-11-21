@@ -18,15 +18,16 @@ jpype.startJVM(jvm_path, "-Djava.class.path={0}".format(jar_path))
 class HttpUtil(object):
 
     # 静态成员/变量
-    statistics = {'total': 0, 'success': 0, 'failed': 0, 'total_time_span': 0.0,
-                  'success_time_span': 0.0, 'total_avg_time': 0.0, 'success_avg_time': 0.0}
+
     _mutex = threading.Lock()
 
     def __init__(self, config):
         self.name = 'http_util'
         self._config = config
-
         self._http_util = jpype.JClass('com.fizzy.sistertao.utils.OkHttpUtil')
+        self._statistics = {'total': 0, 'success': 0, 'failed': 0, 'total_time_span': 0.0, 'success_time_span': 0.0,
+                            'total_avg_time': 0.0, 'success_avg_time': 0.0}
+        self._mutex = threading.Lock()
 
     def cdfbj_get_goods_info(self, goods_id, host=None, port=None):
         """获取cdf北京产品详情，成功则返回goods_info(dict)，失败则返回None"""
@@ -70,32 +71,30 @@ class HttpUtil(object):
             logger.exception('cdfbj get goods info[{0}] with ip proxy[{1}:{2}] exception[{3}].'.format(url, host, port, e))
             goods_info = None
 
-        HttpUtil.__record(goods_info, time.time() - start)
+        self.__record(goods_info, time.time() - start)
 
         return goods_info
 
-    @staticmethod
-    def __record(goods_info, time_span):
+    def __record(self, goods_info, time_span):
         """统计http请求情况"""
 
-        HttpUtil._mutex.acquire()
-        HttpUtil.statistics['total'] = HttpUtil.statistics['total'] + 1
-        HttpUtil.statistics['total_time_span'] = HttpUtil.statistics['total_time_span'] + time_span
-        HttpUtil.statistics['total_avg_time'] = HttpUtil.statistics['total_time_span'] / HttpUtil.statistics['total']
+        self._mutex.acquire()
+        self._statistics['total'] = self._statistics['total'] + 1
+        self._statistics['total_time_span'] = self._statistics['total_time_span'] + time_span
+        self._statistics['total_avg_time'] = self._statistics['total_time_span'] / self._statistics['total']
 
         if goods_info:
-            HttpUtil.statistics['success'] = HttpUtil.statistics['success'] + 1
-            HttpUtil.statistics['success_time_span'] = HttpUtil.statistics['success_time_span'] + time_span
-            HttpUtil.statistics['success_avg_time'] = HttpUtil.statistics['success_time_span'] / HttpUtil.statistics['success']
+            self._statistics['success'] = self._statistics['success'] + 1
+            self._statistics['success_time_span'] = self._statistics['success_time_span'] + time_span
+            self._statistics['success_avg_time'] = self._statistics['success_time_span'] / self._statistics['success']
         else:
-            HttpUtil.statistics['failed'] = HttpUtil.statistics['failed'] + 1
-        HttpUtil._mutex.release()
+            self._statistics['failed'] = self._statistics['failed'] + 1
+        self._mutex.release()
 
-    @staticmethod
-    def log():
+    def log(self):
         logger.info('http statistics[total:{0}][success:{1}][failed:{2}]'.format(
-            HttpUtil.statistics['total'], HttpUtil.statistics['success'], HttpUtil.statistics['failed']))
+            self._statistics['total'], self._statistics['success'], self._statistics['failed']))
         logger.info('http statistics[total_time_span:{0}][total_avg_time:{1}]'.format(
-            HttpUtil.statistics['total_time_span'], HttpUtil.statistics['total_avg_time']))
+            self._statistics['total_time_span'], self._statistics['total_avg_time']))
         logger.info('http statistics[success_time_span:{0}][success_avg_time:{1}]'.format(
-            HttpUtil.statistics['success_time_span'], HttpUtil.statistics['success_avg_time']))
+            self._statistics['success_time_span'], self._statistics['success_avg_time']))
