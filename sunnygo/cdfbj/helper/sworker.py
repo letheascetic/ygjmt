@@ -71,14 +71,15 @@ class SWorker(threading.Thread):
             goods_data = session.query(CdfBjGoodsInfo).filter(CdfBjGoodsInfo.goods_id == goods_id).first()
             new_goods_item = CdfBjGoodsInfo.parse(goods_id, goods_info)
 
-            # 新订阅的商品，添加该新订阅的商品到CdfBjGoodsInfo
+            # 新订阅的商品，添加该新订阅的商品到CdfBjGoodsInfo，并直接返回
             if goods_data is None:
                 logger.info('new subscribe goods info[{0}], insert into db.'.format(goods_info))
                 session.add(CdfBjGoodsInfo.from_item(new_goods_item))
+                return subscriber_user_id_list
             # 原有的商品，则更新该商品在db中的数据
             else:
                 goods_data.update(new_goods_item)
-            session.commit()
+                session.commit()
 
             # 查询订阅了该商品的用户，更新这些用户的相关状态，并确定其中要发邮件的用户
             query = session.query(CdfBjSubscriberInfo).filter(CdfBjSubscriberInfo.goods_id == goods_id)\
