@@ -27,7 +27,7 @@ class SWorker(threading.Thread):
         self._http_util = HttpUtil(config)
         self._mailer = Mailer(config)
         self._goods_id_list = goods_id_list                 # 负责查询的产品id
-        self._update_time = None
+        self._update_time = time.time()
         self._ip_util = IpUtil(config)
         self._mutex = threading.Lock()
 
@@ -55,6 +55,7 @@ class SWorker(threading.Thread):
 
         # 获取产品详情
         goods_info = self._http_util.cdfbj_get_goods_info(goods_id, host, port)
+        logger.info('cdfbj get goods info with ip proxy[{0}:{1}] response[{2}].'.format(host, port, goods_info))
 
         # 如果使用IP代理，则记录访问结果
         if self._config.get('PROXY_ENABLE', True):
@@ -87,7 +88,7 @@ class SWorker(threading.Thread):
 
             # 如果该产品目前下架了，则不需要查询补货提醒或折扣变动提醒
             # !!!是否需要将关注该商品用户的补货通知标志位[replenishment_flag]统一复位？
-            if new_goods_item['goods_status'] == '下架':
+            if new_goods_item['goods_status'] == '下架' or new_goods_item['goods_status'] == '不存在':
                 for subscriber_data in query.all():
                     subscriber_data.replenishment_flag = 0
                 return subscriber_user_id_list
@@ -175,3 +176,7 @@ class SWorker(threading.Thread):
 
                 if self._config.get('INTERVAL_ENABLE', True):
                     time.sleep(random.random() * self._config.get('TIME_INTERVAL', 0.5) * 2)
+
+            if (time.time() - self._update_time) > 600:
+                self._update_time = time.time()
+                HttpUtil.log()

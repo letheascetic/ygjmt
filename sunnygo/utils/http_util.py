@@ -38,7 +38,7 @@ class HttpUtil(object):
         try:
             response = self._http_util.getGoodsInfo(url, host, port)
             content = json.loads(str(response))         # 如果返回的是html，在这一步会发生exception
-            logger.info('cdfbj get goods info[{0}] with ip proxy[{1}:{2}] response[{3}].'.format(url, host, port, content))
+            # logger.info('cdfbj get goods info[{0}] with ip proxy[{1}:{2}] response[{3}].'.format(url, host, port, content))
             code = str(content['code'])
             # 商品已下架
             if code == 'K-030007':
@@ -57,11 +57,14 @@ class HttpUtil(object):
                 goods_info['price'] = info['salePrice']
                 if len(info['marketingLabels']) > 0:
                     goods_info['discount'] = info['marketingLabels'][0]['marketingDesc']
+            elif code == 'K-030001':
+                goods_info['status'] = '不存在'
+                goods_info['stock'] = None
             elif 'K-' in code:
-                logger.info('cdfbj get goods info[{0}] return unknown response code[{1}].'.format(goods_info['url'], content))
+                logger.debug('cdfbj get goods info[{0}] return unknown response code[{1}].'.format(goods_info['url'], code))
                 goods_info = None
             else:
-                logger.info('cdfbj get goods info[{0}] with ip proxy[{1}:{2}] failed[{3}].'.format(url, host, port, content))
+                logger.debug('cdfbj get goods info[{0}] with ip proxy[{1}:{2}] failed[{3}].'.format(url, host, port, code))
                 goods_info = None
         except Exception as e:
             logger.exception('cdfbj get goods info[{0}] with ip proxy[{1}:{2}] exception[{3}].'.format(url, host, port, e))
@@ -87,3 +90,12 @@ class HttpUtil(object):
         else:
             HttpUtil.statistics['failed'] = HttpUtil.statistics['failed'] + 1
         HttpUtil._mutex.release()
+
+    @staticmethod
+    def log():
+        logger.info('http statistics[total:{0}][success:{1}][failed:{2}]'.format(
+            HttpUtil.statistics['total'], HttpUtil.statistics['success'], HttpUtil.statistics['failed']))
+        logger.info('http statistics[total_time_span:{0}][total_avg_time:{1}]'.format(
+            HttpUtil.statistics['total_time_span'], HttpUtil.statistics['total_avg_time']))
+        logger.info('http statistics[success_time_span:{0}][success_avg_time:{1}]'.format(
+            HttpUtil.statistics['success_time_span'], HttpUtil.statistics['success_avg_time']))
