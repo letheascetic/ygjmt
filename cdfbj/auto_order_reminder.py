@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class AutoOrderReminder(object):
-    message_queue = None
+    message_queue = None1
     goods_user_info = None      # 产品用户字典，记录产品订阅的用户
     user_info_dict = None       # 用户信息字典，包含用户名、密码、邮箱、订阅的产品及提醒阈值
     user_status_dict = None     # 用户状态字典，记录用户订阅的产品是否已经发起过提醒
@@ -164,7 +164,7 @@ class AutoOrderReminder(object):
         if new_num <= 0:
             return
 
-        order_id = random.choice(['124824', '110169'])
+        order_id = random.choice(['110169'])
 
         # 直连IP
         # url = 'http://webapi.http.zhimacangku.com/getip?num={0}&type=2&pro=&city=0&yys=0&port=11&pack=110169&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions='

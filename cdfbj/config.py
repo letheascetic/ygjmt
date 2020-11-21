@@ -35,9 +35,9 @@ ON_SALE_REMINDER_CONFIG = {
 
 
 AUTO_ORDER_REMINDER_CONFIG = {
-    'interval': 0.15,
-    'worker_num': 8,
-    'ip_pool_num': 16,
+    'interval': 0.05,
+    'worker_num': 7,
+    'ip_pool_num': 10,
     'use_proxy': True,
     'auto_order_use_proxy': False,
     'goods_user_file': '北京日上锁单商品信息.xlsx',
@@ -54,8 +54,10 @@ AUTO_ORDER_REMINDER_CONFIG = {
     ],
     'monitor_goods_ids': [
         '2c9194587219d0ae017219dc909c03e0',
-        '2c91c7f47407d82f01740b96635e03ef',
         '2c9194597219d0ad017219dc919d04b3',
         '2c919458739b621d0173b9ae2b35338e',
+        '2c91c7f473bf846f0173c90408311a84',
+        '2c9194597219d0ad017219dc900b036e',
+        '2c919458759546e501759c6419715ba4',
     ]
 }
