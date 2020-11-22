@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class AutoOrderReminder(object):
-    message_queue = None1
+    message_queue = None
     goods_user_info = None      # 产品用户字典，记录产品订阅的用户
     user_info_dict = None       # 用户信息字典，包含用户名、密码、邮箱、订阅的产品及提醒阈值
     user_status_dict = None     # 用户状态字典，记录用户订阅的产品是否已经发起过提醒

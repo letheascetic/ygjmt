@@ -19,14 +19,15 @@ class Mailer(object):
 
     def send_subscriber_mail(self, user, mail_title, goods_info):
         # 用户有邮箱和授权码，且邮箱状态正常，则使用该邮箱发送
-        if user.email and user.email_code and user.email_status == 0:
+        # if user.email and user.email_code and user.email_status == 0:
+        if user.email and user.email_code:
             from_addr, code = user.email, user.email
             to_addrs = [from_addr]
         # 用户有邮箱和授权码，且邮箱状态不正常，则使用服务器的邮箱发送
-        elif user.email and user.email_code and user.email_status != 0:
-            server_mailer = random.choice(self._config['SERVER_MAILERS'])
-            from_addr, code = server_mailer['email'], server_mailer['code']
-            to_addrs = [user.email]
+        # elif user.email and user.email_code and user.email_status != 0:
+        #     server_mailer = random.choice(self._config['SERVER_MAILERS'])
+        #     from_addr, code = server_mailer['email'], server_mailer['code']
+        #     to_addrs = [user.email]
         # 用户有邮箱但没有授权码，则使用服务器的邮箱发送
         elif user.email and not user.email_code:
             server_mailer = random.choice(self._config['SERVER_MAILERS'])
@@ -78,7 +79,7 @@ class Mailer(object):
 
         content = {'商品': goods_info['title'], '状态': goods_info['status'], '库存': goods_info['stock'],
                    '价格': goods_info['price'], '折扣': goods_info['discount'], '链接': goods_info['url']}
-        content = str('[{0}]\n\nTo:\n[{0}]\n'.format(content, users))
+        content = str('[{0}]\n\nTo:\n[{1}]\n'.format(content, users))
 
         if '163.com' in from_addr:
             smtp_server = 'smtp.163.com'      # 固定写死
