@@ -58,7 +58,8 @@ class Subscriber(object):
         # 根据订阅人数比例重组产品id，生成goods_id_list
         goods_id_list = []
         for goods_id, subscribe_num in subscribe_info:
-            goods_id_list.extend([goods_id for i in range(0, subscribe_num)])
+            # goods_id_list.extend([goods_id for i in range(0, subscribe_num)])
+            goods_id_list.extend([goods_id])
         random.shuffle(goods_id_list)
 
         # 计算每个worker需要查询的产品id数量

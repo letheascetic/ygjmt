@@ -90,7 +90,7 @@ class IpManager(object):
 
         # 日期改变，则清除过时的数据
         if datetime.datetime.now().day != self.update_time.day:
-            self.sql_helper.delete_stale_data(days=1)
+            self.sql_helper.delete_stale_data(days=30)
 
         self.update_time = datetime.datetime.now()
 

@@ -133,9 +133,9 @@ class SWorker(threading.Thread):
         logger.info('goods[{0}] send mail to users[{1}].'.format(goods_info, subscriber_user_id_list))
 
         if user_id_both or user_id_discount:
-            mail_title = '{0} 折扣[或价格]变更提醒'.format(goods_info['title'])
+            mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
         else:
-            mail_title = '{0} 补货提醒'.format(goods_info['title'])
+            mail_title = '补货提醒 {0}'.format(goods_info['title'])
         self._mailer.send_sys_subscriber_mail(mail_title, goods_info, user_id_list)
 
         session = self._sql_helper.create_session()
@@ -146,11 +146,11 @@ class SWorker(threading.Thread):
 
             for user_data in user_all_list:
                 if user_data.id in user_id_both:
-                    mail_title = '{0} 折扣[或价格]变更提醒'.format(goods_info['title'])
+                    mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
                 elif user_data.id in user_id_replenishment:
-                    mail_title = '{0} 补货提醒'.format(goods_info['title'])
+                    mail_title = '补货提醒 {0}'.format(goods_info['title'])
                 else:
-                    mail_title = '{0} 折扣[或价格]变更提醒'.format(goods_info['title'])
+                    mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
 
                 response = self._mailer.send_subscriber_mail(user_data, mail_title, goods_info)
                 if response['code'] != 0:

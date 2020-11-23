@@ -25,7 +25,7 @@ IP_MANAGER_CONFIG = {
     'VENDORS': {
         'zmhttp': {
             'enabled': True,       # 是否使用该IP供应商
-            'ip_num': 3,            # 每次获取IP的数量
+            'ip_num': 15,            # 每次获取IP的数量
             'interval': 360,        # 每次获取IP的时间间隔（单位：秒）
         },
         'horocn': {
@@ -43,10 +43,10 @@ CDFBJ_SUBSCRIBER_CONFIG = {
     'DB_CONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
     'SYS_USER_FILE': '管理员权限北京日上订阅用户.xlsx',
     'SYS_GOODS_FILE': '管理员权限北京日上订阅.xlsx',
-    'WORKER_NUM': 3,
+    'WORKER_NUM': 15,
     'PROXY_ENABLE': True,
     'INTERVAL_ENABLE': True,
-    'TIME_INTERVAL': 0.3,
+    'TIME_INTERVAL': 0.2,
     'SERVER_MAILERS': [
         {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},  # cdfbj_vx1
         {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},  # cdfbj_vx2
