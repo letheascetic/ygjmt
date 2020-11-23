@@ -24,9 +24,10 @@ MYSQL_CONFIG_TESTING = {
 IP_MANAGER_CONFIG = {
     'VENDORS': {
         'zmhttp': {
-            'enabled': True,       # 是否使用该IP供应商
-            'ip_num': 15,            # 每次获取IP的数量
-            'interval': 360,        # 每次获取IP的时间间隔（单位：秒）
+            'enabled': True,          # 是否使用该IP供应商
+            'ip_num': 5,              # 每次获取IP的数量
+            'interval': 360,          # 每次获取IP的时间间隔（单位：秒）
+            'ip_threshold': 0.95      # 不使用
         },
         'horocn': {
             'enabled': False,
@@ -46,7 +47,7 @@ CDFBJ_SUBSCRIBER_CONFIG = {
     'WORKER_NUM': 15,
     'PROXY_ENABLE': True,
     'INTERVAL_ENABLE': True,
-    'TIME_INTERVAL': 0.2,
+    'TIME_INTERVAL': 0.4,
     'SERVER_MAILERS': [
         {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},  # cdfbj_vx1
         {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},  # cdfbj_vx2

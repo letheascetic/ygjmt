@@ -66,3 +66,22 @@ def load_sys_user_file(filename):
     logger.info('---------------------------------------------------------------------------------')
 
     return sys_user_dict
+
+
+def load_zmhttp_city_code_dict(filename):
+    """读取zmhttp的城市对应码，以方便获取指定城市的ip"""
+
+    workbook = load_workbook(filename)
+    sheets = workbook.get_sheet_names()
+    booksheet = workbook.get_sheet_by_name(sheets[0])
+    rows = booksheet.rows
+
+    city_code_dict = {}
+
+    for row in rows:
+        city_name = row[1].value
+        city_code = row[2].value
+        if city_name and city_code:
+            city_code_dict[city_name.strip()] = str(city_code).strip()
+
+    return city_code_dict

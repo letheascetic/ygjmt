@@ -60,11 +60,11 @@ class SqlIpManager(object):
             self._session.rollback()
             return False
 
-    def query_ip_activated(self, vendor, time_remaining=0):
+    def query_ip_activated(self, vendor, time_remaining=0, failed_threshold=20):
         try:
             expire_time = datetime.datetime.now() + datetime.timedelta(seconds=time_remaining)
             query = self._session.query(func.count('1')).filter(IpPool.vendor == vendor)\
-                .filter(IpPool.expire_time >= expire_time)
+                .filter(IpPool.expire_time >= expire_time).filter(IpPool.failed_num <= failed_threshold)
             num = query.one()[0]
             logger.info('query ip activated[{0}|{1}] success[{2}].'.format(vendor, time_remaining, num))
             return num
@@ -96,3 +96,14 @@ class SqlIpManager(object):
             logger.exception('delete stale data[{0}] exception[{1}].'.format(days, e))
             self._session.rollback()
         return False
+
+    def query_city_ip_rank(self, vendor, ip_threshold=0.95):
+        query_sql = "select city, count(1), sum(failed_num), sum(success_num), sum(success_num)/(sum(success_num)+sum(failed_num)) as a from ip_pool where vendor = '{0}' group by city order by a desc, sum(success_num) desc"
+        query_sql = query_sql.format(vendor)
+        try:
+            cursor = self._session.execute(query_sql)
+            city_list = [city_info[0] for city_info in cursor.fetchall() if city_info[4] >= ip_threshold]
+            return city_list
+        except Exception as e:
+            logger.exception('[{0}] query city ip rank exception[{1}].'.format(vendor, e))
+            self._session.rollback()

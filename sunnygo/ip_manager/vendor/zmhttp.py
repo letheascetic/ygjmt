@@ -2,9 +2,11 @@
 
 import json
 import time
+import random
 import logging
 import datetime
 import requests
+from utils import reader
 
 
 logger = logging.getLogger(__name__)
@@ -23,6 +25,7 @@ class ZmHttp(object):
             {'appkey': '2252f48ef2c1c33117eb6986dd90e6e6', 'package': '110169'}]
         self._package_index = 0
         self.update_time = None
+        self._city_code_dict = reader.load_zmhttp_city_code_dict('zmhttp_city_code_list.xlsx')
 
     def init_vendor(self, ip):
         if self.ip_in_white_list(ip):
@@ -45,12 +48,27 @@ class ZmHttp(object):
         # 寻找符合条件的package
         package = self._get_selected_package(self._config['ip_num'])
 
-        # 获取可用的ip
-        ip_items = self._get_ip_available(package['package'], self._config['ip_num'])
+        # 获取满足条件的city
+        city_list = self._sql_helper.query_city_ip_rank(self.vendor, self._config['ip_threshold'])
 
-        # 添加到ip pool
-        if ip_items:
-            self._sql_helper.insert_ip_pool(ip_items)
+        if city_list:
+            num = self._config['ip_num']
+            while num > 0:
+                city_code = self._get_city_code(random.choice(city_list))
+                # 获取可用的ip
+                ip_items = self._get_ip_available(package['package'], num, city_code)
+                # 添加到ip pool
+                if ip_items:
+                    self._sql_helper.insert_ip_pool(ip_items)
+                    num = num - len(ip_items)
+                time.sleep(5)
+        else:
+            city_code = '0'
+            # 获取可用的ip
+            ip_items = self._get_ip_available(package['package'], self._config['ip_num'], city_code)
+            # 添加到ip pool
+            if ip_items:
+                self._sql_helper.insert_ip_pool(ip_items)
 
         # 查询当前正在使用的ip数，计算需要添加的ip数
         ip_activated = self._sql_helper.query_ip_activated(self.vendor, 60)
@@ -147,9 +165,9 @@ class ZmHttp(object):
         except Exception as e:
             logger.exception('[{0}] query ip available[{1}|{2}] exception[{3}].'.format(self.vendor, appkey, package, e))
 
-    def _get_ip_available(self, package, ip_num):
-        url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city=0&yys=0&port=11&pack={1}&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions='
-        url = url.format(ip_num, package)
+    def _get_ip_available(self, package, ip_num, city_code='0'):
+        url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city={1}&yys=0&port=11&pack={2}&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions='
+        url = url.format(ip_num, city_code, package)
         try:
             r = requests.get(url, timeout=10)
             if r.status_code == requests.codes.ok:
@@ -166,3 +184,9 @@ class ZmHttp(object):
             logger.info('[{0}] get ip available[{1}|{2}] failed[{3}].'.format(self.vendor, package, ip_num, r.text))
         except Exception as e:
             logger.exception('[{0}] get ip available[{1}|{2}] exception[{3}].'.format(self.vendor, package, ip_num, e))
+
+    def _get_city_code(self, city):
+        for city_name in self._city_code_dict.keys():
+            if city in city_name:
+                return self._city_code_dict[city_name]
+        return '0'
