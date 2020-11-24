@@ -62,10 +62,10 @@ class HttpUtil(object):
                 goods_info['status'] = '不存在'
                 goods_info['stock'] = None
             elif 'K-' in code:
-                logger.debug('cdfbj get goods info[{0}] return unknown response code[{1}].'.format(goods_info['url'], code))
+                logger.info('cdfbj get goods info[{0}] return unknown response code[{1}].'.format(goods_info['url'], code))
                 goods_info = None
             else:
-                logger.debug('cdfbj get goods info[{0}] with ip proxy[{1}:{2}] failed[{3}].'.format(url, host, port, code))
+                logger.info('cdfbj get goods info[{0}] with ip proxy[{1}:{2}] failed[{3}].'.format(url, host, port, code))
                 goods_info = None
         except Exception as e:
             logger.exception('cdfbj get goods info[{0}] with ip proxy[{1}:{2}] exception[{3}].'.format(url, host, port, e))
