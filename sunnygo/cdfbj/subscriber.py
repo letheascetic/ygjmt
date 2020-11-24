@@ -119,6 +119,7 @@ class Subscriber(object):
             query = session.query(User).filter(User.id.in_(user_id_list)).filter(User.email.isnot(None))
             user_all_list = [user for user in query.all()]
             random.shuffle(user_all_list)
+            # user_all_list = user_all_list[0:4]
 
             for user_data in user_all_list:
                 if user_data.id in user_id_both:

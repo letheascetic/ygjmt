@@ -44,7 +44,7 @@ CDFBJ_SUBSCRIBER_CONFIG = {
     'DB_CONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
     'SYS_USER_FILE': '管理员权限北京日上订阅用户.xlsx',
     'SYS_GOODS_FILE': '管理员权限北京日上订阅.xlsx',
-    'WORKER_NUM': 1,
+    'WORKER_NUM': 4,
     'PROXY_ENABLE': True,
     'INTERVAL_ENABLE': True,
     'TIME_INTERVAL': 0.3,

@@ -77,6 +77,9 @@ class Mailer(object):
         from_addr, code = sys_mailer['email'], sys_mailer['code']
         to_addrs = [from_addr]
 
+        # from_addr, code = 'letheascetic@163.com', 'BGDAEEMWDFDGBRVQ'
+        # to_addrs = [from_addr]
+
         content = {'商品': goods_info['title'], '状态': goods_info['status'], '库存': goods_info['stock'],
                    '价格': goods_info['price'], '折扣': goods_info['discount'], '链接': goods_info['url']}
         content = str('[{0}]\n\nTo:\n[{1}]\n'.format(content, users))
