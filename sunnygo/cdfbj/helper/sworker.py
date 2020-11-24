@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class SWorker(threading.Thread):
 
-    def __init__(self, name, config, goods_id_list):
+    def __init__(self, name, config, goods_id_list, message_queue):
         threading.Thread.__init__(self)
         self.name = name
         self._running = True
@@ -30,6 +30,7 @@ class SWorker(threading.Thread):
         self._update_time = time.time()
         self._ip_util = IpUtil(config)
         self._mutex = threading.Lock()
+        self._message_queue = message_queue
 
     def stop(self):
         self._running = False
@@ -121,47 +122,47 @@ class SWorker(threading.Thread):
         finally:
             self._sql_helper.close_session(session)
 
-    def __mail_subscribers(self, goods_info, subscriber_user_id_list):
-        user_id_both = subscriber_user_id_list[0].intersection(subscriber_user_id_list[1])
-        user_id_replenishment = subscriber_user_id_list[0] - subscriber_user_id_list[1]
-        user_id_discount = subscriber_user_id_list[1] - subscriber_user_id_list[0]
-
-        user_id_list = list(subscriber_user_id_list[0].union(subscriber_user_id_list[1]))
-        if not user_id_list:
-            return
-
-        logger.info('goods[{0}] send mail to users[{1}].'.format(goods_info, subscriber_user_id_list))
-
-        if user_id_both or user_id_discount:
-            mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
-        else:
-            mail_title = '补货提醒 {0}'.format(goods_info['title'])
-        self._mailer.send_sys_subscriber_mail(mail_title, goods_info, user_id_list)
-
-        session = self._sql_helper.create_session()
-        try:
-            query = session.query(User).filter(User.id.in_(user_id_list)).filter(User.email.isnot(None))
-            user_all_list = [user for user in query.all()]
-            random.shuffle(user_all_list)
-
-            for user_data in user_all_list:
-                if user_data.id in user_id_both:
-                    mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
-                elif user_data.id in user_id_replenishment:
-                    mail_title = '补货提醒 {0}'.format(goods_info['title'])
-                else:
-                    mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
-
-                response = self._mailer.send_subscriber_mail(user_data, mail_title, goods_info)
-                if response['code'] != 0:
-                    user_data.email_status = 1
-
-        except Exception as e:
-            logger.exception('goods[{0}] mail subscribers[{1}] exception[{2}].'.format(
-                goods_info, subscriber_user_id_list, e))
-            session.rollback()
-        finally:
-            self._sql_helper.close_session(session)
+    # def __mail_subscribers(self, goods_info, subscriber_user_id_list):
+    #     user_id_both = subscriber_user_id_list[0].intersection(subscriber_user_id_list[1])
+    #     user_id_replenishment = subscriber_user_id_list[0] - subscriber_user_id_list[1]
+    #     user_id_discount = subscriber_user_id_list[1] - subscriber_user_id_list[0]
+    #
+    #     user_id_list = list(subscriber_user_id_list[0].union(subscriber_user_id_list[1]))
+    #     if not user_id_list:
+    #         return
+    #
+    #     logger.info('goods[{0}] send mail to users[{1}].'.format(goods_info, subscriber_user_id_list))
+    #
+    #     if user_id_both or user_id_discount:
+    #         mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
+    #     else:
+    #         mail_title = '补货提醒 {0}'.format(goods_info['title'])
+    #     self._mailer.send_sys_subscriber_mail(mail_title, goods_info, user_id_list)
+    #
+    #     session = self._sql_helper.create_session()
+    #     try:
+    #         query = session.query(User).filter(User.id.in_(user_id_list)).filter(User.email.isnot(None))
+    #         user_all_list = [user for user in query.all()]
+    #         random.shuffle(user_all_list)
+    #
+    #         for user_data in user_all_list:
+    #             if user_data.id in user_id_both:
+    #                 mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
+    #             elif user_data.id in user_id_replenishment:
+    #                 mail_title = '补货提醒 {0}'.format(goods_info['title'])
+    #             else:
+    #                 mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
+    #
+    #             response = self._mailer.send_subscriber_mail(user_data, mail_title, goods_info)
+    #             if response['code'] != 0:
+    #                 user_data.email_status = 1
+    #
+    #     except Exception as e:
+    #         logger.exception('goods[{0}] mail subscribers[{1}] exception[{2}].'.format(
+    #             goods_info, subscriber_user_id_list, e))
+    #         session.rollback()
+    #     finally:
+    #         self._sql_helper.close_session(session)
 
     def run(self):
         i = 0
@@ -187,7 +188,8 @@ class SWorker(threading.Thread):
                     continue
 
                 # 发送邮件
-                self.__mail_subscribers(goods_info, subscriber_user_id_list)
+                self._message_queue.append([goods_info, subscriber_user_id_list])
+                # self.__mail_subscribers(goods_info, subscriber_user_id_list)
 
                 if self._config.get('INTERVAL_ENABLE', True):
                     time.sleep(random.random() * self._config.get('TIME_INTERVAL', 0.5) * 2)

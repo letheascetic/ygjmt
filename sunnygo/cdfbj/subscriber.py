@@ -1,8 +1,11 @@
 # coding: utf-8
 
+import time
 import random
 import logging
 from utils import reader
+from sql.base import User
+from utils.mailer import Mailer
 from sql.sqlcdfbj import SqlCdfBj
 from cdfbj.helper.sworker import SWorker
 
@@ -16,6 +19,8 @@ class Subscriber(object):
         self.name = 'cdfbj_subscriber'
         self._config = config
         self._sql_helper = SqlCdfBj()
+        self._message_queue = []
+        self._mailer = Mailer(config)
 
     def init_sync_db(self):
         """初始化同步数据库"""
@@ -76,6 +81,63 @@ class Subscriber(object):
 
         return distributed_goods_id_list
 
+    def __do_monitoring(self):
+        while True:
+            if len(self._message_queue) != 0:
+                session = self._sql_helper.create_session()
+                try:
+                    while len(self._message_queue) != 0:
+                        message = self._message_queue.pop()
+                        goods_info, subscriber_user_id_list = message[0], message[1]
+                        self.__mail_subscribers(session, goods_info, subscriber_user_id_list)
+                except Exception as e:
+                    logger.exception('do monitoring exception[{0}].'.format(e))
+                    session.rollback()
+                finally:
+                    self._sql_helper.close_session(session)
+            else:
+                time.sleep(3)
+
+    def __mail_subscribers(self, session, goods_info, subscriber_user_id_list):
+        user_id_both = subscriber_user_id_list[0].intersection(subscriber_user_id_list[1])
+        user_id_replenishment = subscriber_user_id_list[0] - subscriber_user_id_list[1]
+        user_id_discount = subscriber_user_id_list[1] - subscriber_user_id_list[0]
+
+        user_id_list = list(subscriber_user_id_list[0].union(subscriber_user_id_list[1]))
+        if not user_id_list:
+            return
+
+        logger.info('goods[{0}] send mail to users[{1}].'.format(goods_info, subscriber_user_id_list))
+
+        if user_id_both or user_id_discount:
+            mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
+        else:
+            mail_title = '补货提醒 {0}'.format(goods_info['title'])
+        self._mailer.send_sys_subscriber_mail(mail_title, goods_info, user_id_list)
+
+        try:
+            query = session.query(User).filter(User.id.in_(user_id_list)).filter(User.email.isnot(None))
+            user_all_list = [user for user in query.all()]
+            random.shuffle(user_all_list)
+
+            for user_data in user_all_list:
+                if user_data.id in user_id_both:
+                    mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
+                elif user_data.id in user_id_replenishment:
+                    mail_title = '补货提醒 {0}'.format(goods_info['title'])
+                else:
+                    mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
+
+                response = self._mailer.send_subscriber_mail(user_data, mail_title, goods_info)
+                if response['code'] != 0:
+                    user_data.email_status = user_data.email_status + 1
+                else:
+                    user_data.email_status = 0
+
+        except Exception as e:
+            logger.exception('goods[{0}] mail subscribers[{1}] exception[{2}].'.format(
+                goods_info, subscriber_user_id_list, e))
+
     def execute(self):
         # self.init_sync_db()
 
@@ -83,9 +145,11 @@ class Subscriber(object):
         workers = []
 
         for i in range(0, len(distributed_goods_id_list)):
-            worker = SWorker('worker[{0}]'.format(i+1), self._config, distributed_goods_id_list[i])
+            worker = SWorker('worker[{0}]'.format(i+1), self._config, distributed_goods_id_list[i], self._message_queue)
             workers.append(worker)
             worker.start()
 
-        for worker in workers:
-            worker.join()
+        # for worker in workers:
+        #     worker.join()
+
+        self.__do_monitoring()
