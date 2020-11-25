@@ -21,7 +21,7 @@ class IpManager(object):
         self.config = config
         self.sql_helper = SqlIpManager()
         self.vendors = []
-        self._vender_initialized = True
+        self._vendor_initialized = True
         for vendor_name in config.get('VENDORS', []):
             logger.info('vendor[{0}] with config[{1}].'.format(vendor_name, config['VENDORS'][vendor_name]))
             if config['VENDORS'][vendor_name]['enabled']:
@@ -70,17 +70,17 @@ class IpManager(object):
         for vendor in self.vendors:
             vendor.init_vendor(self.seeker_info['ip'])
 
-        self._vender_initialized = reduce(lambda x, y: x and y, [vendor.vendor_initialized for vendor in self.vendors])
+        self._vendor_initialized = reduce(lambda x, y: x and y, [vendor.vendor_initialized for vendor in self.vendors])
 
         # 结束会话
         self.sql_helper.close_session()
 
     def __update(self):
         # 如果有vendor初始化没成功，则尝试再次初始化
-        if not self._vender_initialized:
+        if not self._vendor_initialized:
             ip = self.__get_local_ip()
             if ip is not None:
-                self._vender_initialized = reduce(
+                self._vendor_initialized = reduce(
                     lambda x, y: x and y,
                     [vendor.init_vendor(ip) for vendor in self.vendors if not vendor.vendor_initialized])
 
@@ -114,8 +114,8 @@ class IpManager(object):
         # 本地ip没有发生变化，只更新没有初始化成功的vendor
         else:
             for vendor in self.vendors:
-                if not vendor.vendor_initialized:
-                    vendor.init_vendor(ip)
+                # if not vendor.vendor_initialized:
+                vendor.init_vendor(ip)
 
         # 更新ip manager到seeker表
         self.sql_helper.update_seeker(self.seeker_info)

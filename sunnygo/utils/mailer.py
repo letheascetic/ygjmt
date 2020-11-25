@@ -21,7 +21,7 @@ class Mailer(object):
         # 用户有邮箱和授权码，且邮箱状态正常，则使用该邮箱发送
         # if user.email and user.email_code and user.email_status == 0:
         if user.email and user.email_code:
-            from_addr, code = user.email, user.email
+            from_addr, code = user.email, user.email_code
             to_addrs = [from_addr]
         # 用户有邮箱和授权码，且邮箱状态不正常，则使用服务器的邮箱发送
         # elif user.email and user.email_code and user.email_status != 0:

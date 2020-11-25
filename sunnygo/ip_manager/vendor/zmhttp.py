@@ -45,14 +45,27 @@ class ZmHttp(object):
             logger.info('vendor[{0}] not initialized.'.format(self.vendor))
             return
 
+        # 查询当前正在使用的ip数，计算需要添加的ip数
+        ip_activated = self._sql_helper.query_ip_activated(self.vendor, 60)
+
+        # 如果不是刚启动且当前可用的IP数量>=需要的IP数量，则直接返回
+        if self.update_time is not None and ip_activated and ip_activated >= self._config['ip_num']:
+            # self.update_time = time.time()
+            return
+
+        if self.update_time is None:
+            ip_num = self._config['ip_num']
+        else:
+            ip_num = self._config['ip_num'] - ip_activated
+
         # 寻找符合条件的package
-        package = self._get_selected_package(self._config['ip_num'])
+        package = self._get_selected_package(ip_num)
 
         # 获取满足条件的city
         city_list = self._sql_helper.query_city_ip_rank(self.vendor, self._config['ip_threshold'])
 
         if city_list:
-            num = self._config['ip_num']
+            num = ip_num
             while num > 0:
                 city_code = self._get_city_code(random.choice(city_list))
                 # 获取可用的ip
@@ -65,7 +78,7 @@ class ZmHttp(object):
         else:
             city_code = '0'
             # 获取可用的ip
-            ip_items = self._get_ip_available(package['package'], self._config['ip_num'], city_code)
+            ip_items = self._get_ip_available(package['package'], ip_num, city_code)
             # 添加到ip pool
             if ip_items:
                 self._sql_helper.insert_ip_pool(ip_items)
