@@ -26,8 +26,8 @@ IP_MANAGER_CONFIG = {
         'zmhttp': {
             'enabled': True,          # 是否使用该IP供应商
             'ip_num': 5,              # 实时有效的IP数量
-            'interval': 180,          # 每次查询有效IP的时间间隔
-            'ip_threshold': 0.96      # 不使用
+            'interval': 60,           # 每次查询有效IP的时间间隔
+            'ip_threshold': 0.9       # 不使用
         },
         'horocn': {
             'enabled': False,

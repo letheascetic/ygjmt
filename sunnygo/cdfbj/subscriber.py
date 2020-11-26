@@ -122,6 +122,9 @@ class Subscriber(object):
             # user_all_list = user_all_list[0:4]
 
             for user_data in user_all_list:
+                user_data.email_code = user_data.email_code.strip()
+                # if user_data.id != 'JingleBell200201':
+                #     continue
                 if user_data.id in user_id_both:
                     mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
                 elif user_data.id in user_id_replenishment:

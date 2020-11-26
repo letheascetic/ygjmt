@@ -107,3 +107,32 @@ class SqlIpManager(object):
         except Exception as e:
             logger.exception('[{0}] query city ip rank exception[{1}].'.format(vendor, e))
             self._session.rollback()
+
+    def query_city_ip_rank2(self, vendor, failed_threshold=20, ip_threshold=0.95):
+        city_ip_rank_dict = {}
+        try:
+            sql = "select city, count(1) from ip_pool where vendor = '{0}' and failed_num > {1} group by city"
+            sql = sql.format(vendor, failed_threshold)
+            cursor = self._session.execute(sql)
+            for city_info in cursor.fetchall():
+                city_ip_rank_dict[city_info[0]] = {'failed': city_info[1], 'success': 0}
+
+            sql = "select city, count(1) from ip_pool where vendor = '{0}' and failed_num <= {1} group by city"
+            sql = sql.format(vendor, failed_threshold)
+            cursor = self._session.execute(sql)
+            for city_info in cursor.fetchall():
+                if city_info[0] in city_ip_rank_dict.keys():
+                    city_ip_rank_dict[city_info[0]].update({'success': city_info[1]})
+                else:
+                    city_ip_rank_dict[city_info[0]] = {'success': city_info[1], 'failed': 0}
+
+            for city in city_ip_rank_dict.keys():
+                city_ip_rank_dict[city]['ratio'] = city_ip_rank_dict[city]['success'] / (city_ip_rank_dict[city]['success'] + city_ip_rank_dict[city]['failed'])
+
+            city_list = sorted(city_ip_rank_dict.items(), key=lambda x: x[1]['ratio'], reverse=True)
+            city_list = [city[0] for city in city_list if city[1]['ratio'] >= ip_threshold]
+
+            return city_list
+        except Exception as e:
+            logger.exception('[{0}] query city ip rank exception[{1}].'.format(vendor, e))
+            self._session.rollback()
