@@ -36,15 +36,15 @@ ON_SALE_REMINDER_CONFIG = {
 
 AUTO_ORDER_REMINDER_CONFIG = {
     'interval': 0.1,
-    'worker_num': 4,
-    'ip_pool_num': 6,
+    'worker_num': 12,
+    'ip_pool_num': 16,
     'use_proxy': True,
     'auto_order_use_proxy': False,
     'goods_user_file': '北京日上锁单商品信息.xlsx',
     'user_info_file': '北京日上锁单用户信息.xlsx',
     'user_status_file': 'lock_user_status.txt',
     'mail_senders': [
-        {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},        # cdfbj_vx1
+        {"email": 'cdf_bj_updater@163.com', 'code': 'IVLTRNOKUNHJGHUB'},        # cdfbj_vx1
         # {"email": 'letheascetic@163.com', 'code': 'BGDAEEMWDFDGBRVQ'},        # cdfbj_vx1
         # {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},	    # cdfbj_vx2
         # {"email": 'cdf_bj_updater_3@163.com', 'code': 'OAJFKDISCBDVRGJE'},	    # cdfbj
@@ -59,5 +59,10 @@ AUTO_ORDER_REMINDER_CONFIG = {
         '2c91c7f473bf846f0173c90408311a84',
         '2c9194597219d0ad017219dc900b036e',
         '2c919458759546e501759c6419715ba4',
+        '2c91c70a74d4d8270174dc9f1f2c030f',
+        '2c91c70a74d4d8270174dc9f1f25030d',
+        '2c9194587219d0ae017219dc92e005b5',
+        '2c919459739b63e40173b9a396614e85',
+        '2c91c7f1739b651d0173b9a5ee972665',   
     ]
 }

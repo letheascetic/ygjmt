@@ -165,6 +165,7 @@ class AutoOrderReminder(object):
             return
 
         order_id = random.choice(['110169'])
+        # order_id = random.choice(['124824'])
 
         # 直连IP
         # url = 'http://webapi.http.zhimacangku.com/getip?num={0}&type=2&pro=&city=0&yys=0&port=11&pack=110169&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions='

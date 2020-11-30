@@ -49,7 +49,7 @@ CDFBJ_SUBSCRIBER_CONFIG = {
     'INTERVAL_ENABLE': True,
     'TIME_INTERVAL': 0.3,
     'SERVER_MAILERS': [
-        {"email": 'cdf_bj_updater@163.com', 'code': 'ZYMXQVJTZRVBEJMS'},  # cdfbj_vx1
+        {"email": 'cdf_bj_updater@163.com', 'code': 'IVLTRNOKUNHJGHUB'},  # cdfbj_vx1
         {"email": 'cdf_bj_updater_2@163.com', 'code': 'SBMMBSAHCMPDUOWC'},  # cdfbj_vx2
         {"email": 'cdf_bj_updater_3@163.com', 'code': 'OAJFKDISCBDVRGJE'},  # cdfbj
         {"email": 'cdf_bj_updater_4@163.com', 'code': 'SJPLBCHBKHIIQCLF'},  # cdfbj_4

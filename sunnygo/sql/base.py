@@ -146,8 +146,8 @@ class CdfBjSubscriberInfo(Base):
             self.replenishment_threshold = item['replenishment_threshold']
 
         # 补货提醒开关被更新，无条件更新replenishment_flag为0[需要提醒]状态
-        if replenishment_switch_updated:
-            self.replenishment_flag = 0
+        # if replenishment_switch_updated:
+        #     self.replenishment_flag = 0
 
         if 'discount_switch' in item.keys() and item['discount_switch'] != self.discount_switch:
             self.discount_switch = item['discount_switch']

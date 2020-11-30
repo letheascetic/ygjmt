@@ -21,7 +21,7 @@ class ZmHttp(object):
         self._sql_helper = sql_helper
         self.vendor_initialized = False
         self._packages = [
-            #{'appkey': 'beefce6b397e3f7eecbc56f692aef9c3', 'package': '124824'},
+            {'appkey': 'beefce6b397e3f7eecbc56f692aef9c3', 'package': '124824'},
             {'appkey': '2252f48ef2c1c33117eb6986dd90e6e6', 'package': '110169'}]
         self._package_index = 0
         self.update_time = None

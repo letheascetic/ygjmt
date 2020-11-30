@@ -37,7 +37,7 @@ class Subscriber(object):
 
             # 更新db中的cdfbj_subscriber_info表，为用户更新或添加对应的订阅信息
             for goods_id in sys_goods_list:
-                subscriber_info_item = {'goods_id': goods_id, 'user_id': user_id}    # 其他参数使用默认值
+                subscriber_info_item = {'goods_id': goods_id, 'user_id': user_id, 'replenishment_switch': 1, 'discount_switch': 1}    # 其他参数使用默认值
                 self._sql_helper.insert_update_cdfbj_subscriber_info(session, subscriber_info_item)
 
         # 结束会话
@@ -90,6 +90,7 @@ class Subscriber(object):
                         message = self._message_queue.pop()
                         goods_info, subscriber_user_id_list = message[0], message[1]
                         self.__mail_subscribers(session, goods_info, subscriber_user_id_list)
+                    session.commit()
                 except Exception as e:
                     logger.exception('do monitoring exception[{0}].'.format(e))
                     session.rollback()
@@ -122,7 +123,7 @@ class Subscriber(object):
             # user_all_list = user_all_list[0:4]
 
             for user_data in user_all_list:
-                # user_data.email_code = user_data.email_code.strip()
+                user_data.email_code = user_data.email_code.strip()
                 # if user_data.id != 'JingleBell200201':
                 #     continue
                 if user_data.id in user_id_both:
@@ -133,10 +134,11 @@ class Subscriber(object):
                     mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
 
                 response = self._mailer.send_subscriber_mail(user_data, mail_title, goods_info)
-                if response['code'] != 0:
-                    user_data.email_status = user_data.email_status + 1
-                else:
-                    user_data.email_status = 0
+                if response['mailer'] == user_data.email:
+                    if response['code'] != 0:
+                        user_data.email_status = user_data.email_status + 1
+                    else:
+                        user_data.email_status = 0
 
         except Exception as e:
             logger.exception('goods[{0}] mail subscribers[{1}] exception[{2}].'.format(
