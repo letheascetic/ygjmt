@@ -7,6 +7,7 @@ from utils import reader
 from sql.base import User
 from utils.mailer import Mailer
 from sql.sqlcdfbj import SqlCdfBj
+from cdfbj.helper.mworker import MWorker
 from cdfbj.helper.sworker import SWorker
 
 
@@ -20,6 +21,8 @@ class Subscriber(object):
         self._config = config
         self._sql_helper = SqlCdfBj()
         self._message_queue = []
+        self._workers = []
+        self._mailers = []
         self._mailer = Mailer(config)
 
     def init_sync_db(self):
@@ -57,7 +60,6 @@ class Subscriber(object):
         worker_num = self._config.get('WORKER_NUM', 1)
 
         # 获取订阅产品的订阅情况
-
         subscribe_info = self.__get_goods_id_subscribe_info()
 
         # 根据订阅人数比例重组产品id，生成goods_id_list
@@ -80,6 +82,39 @@ class Subscriber(object):
             distributed_goods_id_list.append(goods_id_slice)
 
         return distributed_goods_id_list
+
+    def __get_user_id_list(self):
+        session = self._sql_helper.create_session()
+        try:
+            sql = "SELECT distinct(user_id) FROM cdfbj_subscriber_info where discount_switch != 0 or replenishment_switch !=0"
+            cursor = session.execute(sql)
+            return [user_id for user_id in cursor.fetchall()]
+        except Exception as e:
+            logger.exception('get user id list exception[{0}].'.format(e))
+        finally:
+            self._sql_helper.close_session(session)
+
+    def __distribute_mail_tasks(self):
+        """将不同User Id的邮件发送任务分配给不同的mailer"""
+
+        # 获取worker（线程数量）
+        mailer_num = self._config.get('MAILER_NUM', 1)
+
+        # 获取所有开启了订阅服务用户的User Id
+        user_id_list = self.__get_user_id_list()
+        random.shuffle(user_id_list)
+
+        user_per_thread = int(len(user_id_list) / mailer_num)
+
+        distributed_user_id_list = []
+        for i in range(0, mailer_num):
+            if i == mailer_num - 1:
+                user_id_slice = user_id_list[i*user_per_thread:]
+            else:
+                user_id_slice = user_id_list[i*user_per_thread:(i+1)*user_per_thread]
+            distributed_user_id_list.append(user_id_slice)
+
+        return distributed_user_id_list
 
     def __do_monitoring(self):
         while True:
@@ -109,6 +144,14 @@ class Subscriber(object):
             else:
                 time.sleep(3)
 
+    def __find_matching_mailer(self, user_id):
+        for mailer in self._mailers:
+            if mailer.user_id_in_set(user_id):
+                return self._mailers.index(mailer)
+        mailer = random.choice(self._mailers)
+        mailer.add_user_id(user_id)
+        return self._mailers.index(mailer)
+
     def __mail_subscribers2(self, goods_info, subscriber_user_id_list):
         user_id_both = subscriber_user_id_list[0].intersection(subscriber_user_id_list[1])
         user_id_replenishment = subscriber_user_id_list[0] - subscriber_user_id_list[1]
@@ -123,14 +166,24 @@ class Subscriber(object):
         replenishment_mail_title = '补货提醒 {0}'.format(goods_info['title'])
         discount_mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
 
+        distributed_tasks = [[] for i in range(0, len(self._mailers))]
         for user_id in user_id_list:
-            # 合适的
             if user_id in user_id_both or user_id in user_id_discount:
                 mail_title = discount_mail_title
             else:
                 mail_title = replenishment_mail_title
 
+            index = self.__find_matching_mailer(user_id)
+            distributed_tasks[index].append((user_id, mail_title, goods_info))
 
+        for i in range(0, len(self._mailers)):
+            self._mailers[i].add_mail_tasks(distributed_tasks[i])
+
+        if user_id_both or user_id_discount:
+            mail_title = discount_mail_title
+        else:
+            mail_title = replenishment_mail_title
+        self._mailer.send_sys_subscriber_mail(mail_title, goods_info, user_id_list)
 
     def __mail_subscribers(self, session, goods_info, subscriber_user_id_list):
         user_id_both = subscriber_user_id_list[0].intersection(subscriber_user_id_list[1])
@@ -180,15 +233,16 @@ class Subscriber(object):
     def execute(self):
         # self.init_sync_db()
 
-        distributed_goods_id_list = self.__distribute_subscribe_tasks()
-        workers = []
+        distributed_user_id_list = self.__distribute_mail_tasks()
+        for i in range(0, len(distributed_user_id_list)):
+            mailer = MWorker('mailer[{0}]'.format(i+1), self._config, set(distributed_user_id_list[i]))
+            self._mailers.append(mailer)
+            mailer.start()
 
+        distributed_goods_id_list = self.__distribute_subscribe_tasks()
         for i in range(0, len(distributed_goods_id_list)):
             worker = SWorker('worker[{0}]'.format(i+1), self._config, distributed_goods_id_list[i], self._message_queue)
-            workers.append(worker)
+            self._workers.append(worker)
             worker.start()
-
-        # for worker in workers:
-        #     worker.join()
 
         self.__do_monitoring()

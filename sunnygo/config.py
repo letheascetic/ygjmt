@@ -45,6 +45,7 @@ CDFBJ_SUBSCRIBER_CONFIG = {
     'SYS_USER_FILE': '管理员权限北京日上订阅用户.xlsx',
     'SYS_GOODS_FILE': '管理员权限北京日上订阅.xlsx',
     'WORKER_NUM': 4,
+    'MAILER_NUM': 4,
     'PROXY_ENABLE': True,
     'INTERVAL_ENABLE': True,
     'TIME_INTERVAL': 0.3,
