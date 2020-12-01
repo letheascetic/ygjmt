@@ -16,7 +16,7 @@ LOG_CONFIG = {
 # 数据库配置项
 MYSQL_CONFIG_TESTING = {
     'DB_CONNECT_TYPE': 'sqlalchemy',
-    'DB_CONNECT_STRING': 'mysql+pymysql://ascetic:ascetic@192.168.125.2:3306/ygjmt_db?charset=utf8mb4'
+    'DB_CONNECT_STRING': 'mysql+pymysql://ascetic:ascetic@127.0.0.1:3306/ygjmt_db?charset=utf8mb4'
 }
 
 

@@ -99,6 +99,39 @@ class Subscriber(object):
             else:
                 time.sleep(3)
 
+    def __do_monitoring2(self):
+        while True:
+            if len(self._message_queue) != 0:
+                while len(self._message_queue) != 0:
+                    message = self._message_queue.pop()
+                    goods_info, subscriber_user_id_list = message[0], message[1]
+                    self.__mail_subscribers2(goods_info, subscriber_user_id_list)
+            else:
+                time.sleep(3)
+
+    def __mail_subscribers2(self, goods_info, subscriber_user_id_list):
+        user_id_both = subscriber_user_id_list[0].intersection(subscriber_user_id_list[1])
+        user_id_replenishment = subscriber_user_id_list[0] - subscriber_user_id_list[1]
+        user_id_discount = subscriber_user_id_list[1] - subscriber_user_id_list[0]
+
+        user_id_list = list(subscriber_user_id_list[0].union(subscriber_user_id_list[1]))
+        if not user_id_list:
+            return
+
+        logger.info('goods[{0}] send mail to users[{1}].'.format(goods_info, subscriber_user_id_list))
+
+        replenishment_mail_title = '补货提醒 {0}'.format(goods_info['title'])
+        discount_mail_title = '折扣/价格变动 {0}'.format(goods_info['title'])
+
+        for user_id in user_id_list:
+            # 合适的
+            if user_id in user_id_both or user_id in user_id_discount:
+                mail_title = discount_mail_title
+            else:
+                mail_title = replenishment_mail_title
+
+
+
     def __mail_subscribers(self, session, goods_info, subscriber_user_id_list):
         user_id_both = subscriber_user_id_list[0].intersection(subscriber_user_id_list[1])
         user_id_replenishment = subscriber_user_id_list[0] - subscriber_user_id_list[1]
