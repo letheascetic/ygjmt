@@ -84,11 +84,13 @@ class Subscriber(object):
         return distributed_goods_id_list
 
     def __get_user_id_list(self):
+        """获取当前使用订阅功能的所有用户的id"""
         session = self._sql_helper.create_session()
         try:
-            sql = "SELECT distinct(user_id) FROM cdfbj_subscriber_info where discount_switch != 0 or replenishment_switch !=0"
+            sql = "SELECT distinct(user_id) FROM cdfbj_subscriber_info where " \
+                  "discount_switch != 0 or replenishment_switch !=0"
             cursor = session.execute(sql)
-            return [user_id for user_id in cursor.fetchall()]
+            return [user_id[0] for user_id in cursor.fetchall()]
         except Exception as e:
             logger.exception('get user id list exception[{0}].'.format(e))
         finally:
@@ -245,4 +247,4 @@ class Subscriber(object):
             self._workers.append(worker)
             worker.start()
 
-        self.__do_monitoring()
+        self.__do_monitoring2()
