@@ -30,6 +30,9 @@ class SqlIpManager(object):
                 self._session.rollback()
             self._session = None
 
+    def get_session(self):
+        return self._session
+
     def query_seeker(self, seeker_id):
         try:
             query = self._session.query(Seeker).filter(Seeker.id == seeker_id)

@@ -8,8 +8,10 @@ import requests
 from utils import util
 from functools import reduce
 from sql.sqlim import SqlIpManager
+from sqlalchemy import func, or_, and_
 from ip_manager.vendor.zmhttp import ZmHttp
 from ip_manager.vendor.horocn import Horocn
+from sql.base import User, IpPool, CdfBjSubscriberInfo, CdfBjGoodsInfo
 
 
 logger = logging.getLogger(__name__)
@@ -33,6 +35,12 @@ class IpManager(object):
                     logger.warning('unknown vendor[{0}] with config[{1}].'.format(vendor_name, config['VENDORS'][vendor_name]))
         self.seeker_info = None
         self.update_time = datetime.datetime.now()
+
+        today = datetime.datetime.now()
+        report_time_str = '{0}-{1}-{2} {3}'.format(today.year, today.month, today.day, config['ROUTINE'].get('report_time', '23:55:00'))
+        self._next_report_time = datetime.datetime.strptime(report_time_str, "%Y-%m-%d %H:%M:%S")
+        if datetime.datetime.now() > self._next_report_time:
+            self._next_report_time = self._next_report_time + datetime.timedelta(days=1)
 
     def __get_local_ip(self):
         url = 'https://ip.tool.lu/'
@@ -124,6 +132,58 @@ class IpManager(object):
         for vendor in self.vendors:
             vendor.check_activated_ips()
 
+    def __report(self):
+        if datetime.datetime.now() < self._next_report_time:
+            return
+
+        session = self.sql_helper.get_session()
+        try:
+            # 统计当天Ip的使用情况
+            ip_statistics = {}
+            create_time = self._next_report_time - datetime.timedelta(days=1)
+            query = session.query(IpPool.vendor, func.count('1')).filter(IpPool.create_time > create_time)\
+                .filter(IpPool.failed_num <= 20).group_by(IpPool.vendor)
+            for vendor, num in query.all():
+                ip_statistics.update({vendor: {'good_ip': num, 'bad_ip': 0, 'total_ip': num}})
+
+            query = session.query(IpPool.vendor, func.count('1')).filter(IpPool.create_time > create_time)\
+                .filter(IpPool.failed_num > 20).group_by(IpPool.vendor)
+            for vendor, num in query.all():
+                ip_statistics.update({vendor: {'bad_ip': num}})
+                ip_statistics[vendor]['total_ip'] = ip_statistics[vendor]['good_ip'] + ip_statistics[vendor]['bad_ip']
+
+            query = session.query(IpPool.vendor, func.sum(IpPool.failed_num), func.sum(IpPool.success_num))\
+                .filter(IpPool.create_time > create_time).group_by(IpPool.vendor)
+            for vendor, failed, success in query.all():
+                ip_statistics[vendor].update({'failed_num': int(failed), 'success_num': int(success),
+                                              'total_num': int(failed + success)})
+
+            # 统计当前用户情况
+            total_user = session.query(func.count(User.id)).first()[0]
+
+            query = session.query(func.count(func.distinct(CdfBjSubscriberInfo.user_id)))\
+                .filter(or_(CdfBjSubscriberInfo.replenishment_switch == 1, CdfBjSubscriberInfo.discount_switch == 1))
+            subscriber = query.first[0]
+
+            query = session.query(User.id, User.email, User.email_code).filter(User.email_status >= 10)
+            users = [user for user in query.all()]
+
+            user_statistics = {'total': total_user, 'subscriber': subscriber,
+                               'email_error': len(users), 'email_error_users': users}
+
+            # 统计产品情况
+            query = session.query(func.count(func.distinct(CdfBjSubscriberInfo.goods_id)))\
+                .filter(or_(CdfBjSubscriberInfo.replenishment_switch == 1, CdfBjSubscriberInfo.discount_switch == 1))
+            subscribe_goods = query.first()[0]
+
+            total_goods = session.query(func.count(CdfBjGoodsInfo.goods_id)).first()[0]
+
+            goods_statistics = {'total': total_goods, 'subscribe': subscribe_goods}
+
+            self._next_report_time = self._next_report_time + datetime.timedelta(days=1)
+        except Exception as e:
+            logger.info('report exception[{0}].'.format(e))
+
     def execute(self):
         # 初始化
         self.__init()
@@ -134,6 +194,7 @@ class IpManager(object):
                 self.sql_helper.begin_session()
                 self.__push_ips()
                 self.__update()
+                # self.__report()
                 self.sql_helper.close_session()
             except Exception as e:
                 logger.exception('execute [{0}] exception[{1}].'.format(self.name, e))
