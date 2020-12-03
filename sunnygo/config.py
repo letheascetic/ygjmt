@@ -25,7 +25,7 @@ IP_MANAGER_CONFIG = {
     'VENDORS': {
         'zmhttp': {
             'enabled': True,          # 是否使用该IP供应商
-            'ip_num': 5,              # 实时有效的IP数量
+            'ip_num': 4,              # 实时有效的IP数量
             'interval': 60,           # 每次查询有效IP的时间间隔
             'ip_threshold': 0.9       # 不使用
         },
@@ -48,7 +48,7 @@ CDFBJ_SUBSCRIBER_CONFIG = {
     'DB_CONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
     'SYS_USER_FILE': '管理员权限北京日上订阅用户.xlsx',
     'SYS_GOODS_FILE': '管理员权限北京日上订阅.xlsx',
-    'WORKER_NUM': 4,
+    'WORKER_NUM': 3,
     'MAILER_NUM': 4,
     'PROXY_ENABLE': True,
     'INTERVAL_ENABLE': True,
