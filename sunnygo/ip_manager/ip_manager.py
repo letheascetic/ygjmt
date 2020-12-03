@@ -7,6 +7,7 @@ import datetime
 import requests
 from utils import util
 from functools import reduce
+from utils.mailer import Mailer
 from sql.sqlim import SqlIpManager
 from sqlalchemy import func, or_, and_
 from ip_manager.vendor.zmhttp import ZmHttp
@@ -22,6 +23,7 @@ class IpManager(object):
         self.name = 'ip_manager'
         self.config = config
         self.sql_helper = SqlIpManager()
+        self._mailer = Mailer(config)
         self.vendors = []
         self._vendor_initialized = True
         for vendor_name in config.get('VENDORS', []):
@@ -180,6 +182,11 @@ class IpManager(object):
 
             goods_statistics = {'total': total_goods, 'subscribe': subscribe_goods}
 
+            # 发送邮件
+            mail_title = '{0} daily report'.format(self._next_report_time.strftime('%Y-%m-%d %H:%M:%S'))
+            self._mailer.send_report_mail(mail_title, ip_statistics, user_statistics, goods_statistics)
+
+            # 更新下次统计的日期
             self._next_report_time = self._next_report_time + datetime.timedelta(days=1)
         except Exception as e:
             logger.info('report exception[{0}].'.format(e))

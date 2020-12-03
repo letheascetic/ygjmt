@@ -109,3 +109,40 @@ class Mailer(object):
         except Exception as e:
             logger.exception('send sys mail[{0}][{1}] exception[{1}].'.format(sys_mailer, mail_title, e))
             return {'code': 1, 'msg': 'exception', 'mailer': from_addr}
+
+    def send_report_mail(self, mail_title, ip_statistics, user_statistics, goods_statistics):
+        sys_mailer = self._config['SYS_MAILER']
+        from_addr, code = sys_mailer['email'], sys_mailer['code']
+        to_addrs = [from_addr]
+
+        ip_content = 'IP使用情况统计：\n\t{0}\n'.format(ip_statistics)
+        user_content = '用户使用情况统计：\n\t{0}\n'.format(user_statistics)
+        goods_content = '产品使用情况统计：\n\t{0}\n'.format(goods_statistics)
+
+        content = ip_content + user_content + goods_content
+
+        if '163.com' in from_addr:
+            smtp_server = 'smtp.163.com'      # 固定写死
+            smtp_port = 465                   # 固定端口
+        else:
+            smtp_server = 'smtp.qq.com'      # 固定写死
+            smtp_port = 465                  # 固定端口
+
+        try:
+            # 配置服务器
+            stmp = smtplib.SMTP_SSL(smtp_server, smtp_port)
+            stmp.login(from_addr, code)
+
+            # 组装发送内容
+            message = MIMEText(content, 'plain')  # 发送的内容
+            message['From'] = formataddr(["阳光姐妹淘鸭", from_addr])
+            message['To'] = ','.join(to_addrs)  # 收件人
+
+            subject = '{0}: {1}'.format('cdf北京', mail_title)
+            message['Subject'] = Header(subject)  # 邮件标题
+            stmp.sendmail(from_addr, to_addrs, message.as_string())
+
+            return {'code': 0, 'msg': 'success', 'mailer': from_addr}
+        except Exception as e:
+            logger.exception('send report mail[{0}][{1}] exception[{1}].'.format(sys_mailer, mail_title, e))
+            return {'code': 1, 'msg': 'exception', 'mailer': from_addr}

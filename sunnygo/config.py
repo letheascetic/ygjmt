@@ -37,7 +37,7 @@ IP_MANAGER_CONFIG = {
         }
     },
     'ROUTINE': {
-        'report_time': '23:55:00',       # 每天统计的时间
+        'report_time': '23:55:00',       # 每天统计的时间,在这个时间点统计一天的数据并邮件发送到系统邮箱
     },
     'DB_CONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
     'SYS_MAILER': {"email": '3219276656@qq.com', 'code': 'gcagfrrfnbhndejj'},
