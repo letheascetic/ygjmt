@@ -1,7 +1,6 @@
 # coding: utf-8
 
 import logging
-import datetime
 
 
 # 日志配置项
@@ -17,7 +16,7 @@ LOG_CONFIG = {
 # 数据库配置项
 MYSQL_CONFIG_TESTING = {
     'DB_CONNECT_TYPE': 'sqlalchemy',
-    'DB_CONNECT_STRING': 'mysql+pymysql://ascetic:ascetic@192.168.125.2:3306/ygjmt_db?charset=utf8mb4'
+    'DB_CONNECT_STRING': 'mysql+pymysql://ascetic:ascetic@127.0.0.1:3306/ygjmt_db?charset=utf8mb4'
 }
 
 
@@ -37,7 +36,7 @@ IP_MANAGER_CONFIG = {
         }
     },
     'ROUTINE': {
-        'report_time': '23:55:00',       # 每天统计的时间,在这个时间点统计一天的数据并邮件发送到系统邮箱
+        'report_time': '23:59:50',       # 每天统计的时间,在这个时间点统计一天的数据并邮件发送到系统邮箱
     },
     'DB_CONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
     'SYS_MAILER': {"email": '3219276656@qq.com', 'code': 'gcagfrrfnbhndejj'},

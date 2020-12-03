@@ -146,12 +146,12 @@ class IpManager(object):
             query = session.query(IpPool.vendor, func.count('1')).filter(IpPool.create_time > create_time)\
                 .filter(IpPool.failed_num <= 20).group_by(IpPool.vendor)
             for vendor, num in query.all():
-                ip_statistics.update({vendor: {'good_ip': num, 'bad_ip': 0, 'total_ip': num}})
+                ip_statistics[vendor] = {'good_ip': num, 'bad_ip': 0, 'total_ip': num}
 
             query = session.query(IpPool.vendor, func.count('1')).filter(IpPool.create_time > create_time)\
                 .filter(IpPool.failed_num > 20).group_by(IpPool.vendor)
             for vendor, num in query.all():
-                ip_statistics.update({vendor: {'bad_ip': num}})
+                ip_statistics[vendor].update({'bad_ip': num})
                 ip_statistics[vendor]['total_ip'] = ip_statistics[vendor]['good_ip'] + ip_statistics[vendor]['bad_ip']
 
             query = session.query(IpPool.vendor, func.sum(IpPool.failed_num), func.sum(IpPool.success_num))\
@@ -165,7 +165,7 @@ class IpManager(object):
 
             query = session.query(func.count(func.distinct(CdfBjSubscriberInfo.user_id)))\
                 .filter(or_(CdfBjSubscriberInfo.replenishment_switch == 1, CdfBjSubscriberInfo.discount_switch == 1))
-            subscriber = query.first[0]
+            subscriber = query.first()[0]
 
             query = session.query(User.id, User.email, User.email_code).filter(User.email_status >= 10)
             users = [user for user in query.all()]
@@ -201,7 +201,7 @@ class IpManager(object):
                 self.sql_helper.begin_session()
                 self.__push_ips()
                 self.__update()
-                # self.__report()
+                self.__report()
                 self.sql_helper.close_session()
             except Exception as e:
                 logger.exception('execute [{0}] exception[{1}].'.format(self.name, e))
