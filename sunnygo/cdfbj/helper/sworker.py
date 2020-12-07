@@ -112,9 +112,14 @@ class SWorker(threading.Thread):
                 if subscriber_data.discount_switch:
                     # 折扣有变动：价格变动或折扣变动，则将该用户添加到折扣提醒邮件发送队列
                     if old_goods_item['goods_discount'] != new_goods_item['goods_discount'] or old_goods_item['goods_price'] != new_goods_item['goods_price']:
-                        subscriber_user_id_list[1].add(subscriber_data.user_id)
+                        if new_goods_item['goods_discount'] is not None:    # 折扣变动且当前有折扣的情况下才会通知
+                            subscriber_user_id_list[1].add(subscriber_data.user_id)
 
             session.commit()
+
+            if subscriber_user_id_list[0] or subscriber_user_id_list[1]:
+                logger.info('goods info change from [{0}] to [{1}], need to mail.'.format(old_goods_item, new_goods_item))
+
             return subscriber_user_id_list
         except Exception as e:
             logger.info('check goods info[{0}] exception[{1}].'.format(goods_info, e))
