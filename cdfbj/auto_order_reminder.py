@@ -164,7 +164,7 @@ class AutoOrderReminder(object):
         if new_num <= 0:
             return
 
-        order_id = random.choice(['110169'])
+        order_id = random.choice(['110169', '124824'])
         # order_id = random.choice(['124824'])
 
         # 直连IP
