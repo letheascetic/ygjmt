@@ -10,7 +10,7 @@ from sqlalchemy import or_, and_
 from utils.ip_util import IpUtil
 from sql.sqlcdfbj import SqlCdfBj
 from utils.http_util import HttpUtil
-from sql.base import CdfBjGoodsInfo, CdfBjSubscriberInfo, User
+from sql.base import CdfBjGoodsInfo, CdfBjSubscriberInfo, User, CdfBjGoodsRecordInfo
 
 
 logger = logging.getLogger(__name__)
@@ -79,6 +79,7 @@ class SWorker(threading.Thread):
             if goods_data is None:
                 logger.info('new subscribe goods info[{0}], insert into db.'.format(goods_info))
                 session.add(CdfBjGoodsInfo.from_item(new_goods_item))
+                # session.add(CdfBjGoodsRecordInfo.parse(goods_id, goods_info))
                 return subscriber_user_id_list
             # 原有的商品，则更新该商品在db中的数据
             else:
@@ -95,8 +96,11 @@ class SWorker(threading.Thread):
             if new_goods_item['goods_status'] == '下架' or new_goods_item['goods_status'] == '不存在':
                 for subscriber_data in query.all():
                     subscriber_data.replenishment_flag = 0
+                # if old_goods_item['goods_status'] != new_goods_item['goods_status']:
+                #     session.add(CdfBjGoodsRecordInfo.parse(goods_id, goods_info))
                 return subscriber_user_id_list
 
+            record_flag = False
             # 如果该产品没有下架，则需要查询补货提醒或折扣变动提醒
             for subscriber_data in query.all():
                 # 补货提醒是开启的
@@ -105,21 +109,26 @@ class SWorker(threading.Thread):
                     if new_goods_item['goods_num'] >= subscriber_data.replenishment_threshold and not subscriber_data.replenishment_flag:
                         subscriber_user_id_list[0].add(subscriber_data.user_id)
                         subscriber_data.replenishment_flag = 1      # !!!是否需要提前将通知标志位置位？或根据发送邮件结果来置位？
+                        record_flag = True
                     # 产品库存小于补货提醒阈值且已经通知过了，则将通知标志位复位
                     elif new_goods_item['goods_num'] < subscriber_data.replenishment_threshold and subscriber_data.replenishment_flag:
                         subscriber_data.replenishment_flag = 0
+                        record_flag = True
                 # 折扣提醒是开启的
                 if subscriber_data.discount_switch:
                     # 折扣有变动：价格变动或折扣变动，则将该用户添加到折扣提醒邮件发送队列
                     if old_goods_item['goods_discount'] != new_goods_item['goods_discount'] or old_goods_item['goods_price'] != new_goods_item['goods_price']:
+                        record_flag = True
                         if new_goods_item['goods_discount'] is not None:    # 折扣变动且当前有折扣的情况下才会通知
                             subscriber_user_id_list[1].add(subscriber_data.user_id)
-
-            session.commit()
 
             if subscriber_user_id_list[0] or subscriber_user_id_list[1]:
                 logger.info('goods info change from [{0}] to [{1}], need to mail.'.format(old_goods_item, new_goods_item))
 
+            # if record_flag:
+            #     session.add(CdfBjGoodsRecordInfo.parse(goods_id, goods_info))
+
+            session.commit()
             return subscriber_user_id_list
         except Exception as e:
             logger.info('check goods info[{0}] exception[{1}].'.format(goods_info, e))

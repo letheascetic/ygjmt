@@ -116,6 +116,23 @@ class CdfBjGoodsInfo(Base):
                 'goods_price': goods_info['price'], 'goods_discount': goods_info['discount']}
 
 
+class CdfBjGoodsRecordInfo(Base):
+    """table for cdfbj_goods_record_info, 用于记录各产品状态信息的变化"""
+    __tablename__ = 'cdfbj_goods_record_info'
+    id = Column('id', BIGINT, primary_key=True, autoincrement=True, nullable=False)     # 主id
+    goods_id = Column('goods_id', VARCHAR(64), index=True, nullable=False)              # 订阅的商品
+    goods_status = Column('goods_status', VARCHAR(64), nullable=False, index=True)      # 商品状态[在售、下架、缺货]
+    goods_num = Column('goods_num', INTEGER, nullable=True, default=0)                  # 商品库存
+    goods_price = Column('goods_price', FLOAT, nullable=True, default=None)             # 商品售价
+    goods_discount = Column('goods_discount', VARCHAR(128), nullable=True, default=None)    # 商品折扣
+    create_time = Column('create_time', TIMESTAMP, default=datetime.datetime.now, index=True)
+
+    @staticmethod
+    def parse(goods_id, goods_info):
+        return {'goods_id': goods_id, 'goods_status': goods_info['status'], 'goods_num': goods_info['stock'],
+                'goods_price': goods_info['price'], 'goods_discount': goods_info['discount']}
+
+
 class CdfBjSubscriberInfo(Base):
     """table for cdfbj_subscriber_info, 用于表述各产品的订阅信息，包括订阅者id、补货提醒开关、补货提醒阈值、补货提醒状态、折扣提醒开关等"""
     __tablename__ = 'cdfbj_subscriber_info'
@@ -126,7 +143,7 @@ class CdfBjSubscriberInfo(Base):
     # login_name = Column('login_name', VARCHAR(64), nullable=True, default=None)         # 订阅该商品的用户使用的北京cdf账号
     replenishment_switch = Column('replenishment_switch', INTEGER, default=1)           # 补货提醒开关[0:不提醒]
     replenishment_threshold = Column('replenishment_threshold', INTEGER, default=50)    # 补货提醒阈值[默认50]
-    replenishment_flag = Column('replenishment_flag', INTEGER, default=0)       # 商品数量①下降到阈值以下或②超过阈值且还没提醒，这两者情况下置0[0表示需要提醒，1表示已经提醒]
+    replenishment_flag = Column('replenishment_flag', INTEGER, default=0)               # 商品数量①下降到阈值以下或②超过阈值且还没提醒，这两者情况下置0[0表示需要提醒，1表示已经提醒]
     discount_switch = Column('discount_switch', INTEGER, default=1)                     # 折扣提醒开关[0:不提醒]
     update_time = Column('update_time', TIMESTAMP, nullable=False, onupdate=datetime.datetime.now, default=datetime.datetime.now)
 
