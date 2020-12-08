@@ -214,6 +214,7 @@ class User(Base):
     email_status = Column('email_status', INTEGER, default=0)                                   # 邮箱是否可用[0:正常 1:授权码有误]
     password = Column('password', VARCHAR(256), nullable=False)                                 # 登录密码
     register_time = Column('register_time', TIMESTAMP, nullable=False, default=datetime.datetime.now)    # 注册时间
+    update_time = Column('update_time', TIMESTAMP, nullable=False, onupdate=datetime.datetime.now)
 
     def __repr__(self):
         return '<User [id:{0}][name:{1}][email:{2}]>'.format(self.id, self.name, self.email)
