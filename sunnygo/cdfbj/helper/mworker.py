@@ -46,8 +46,6 @@ class MWorker(threading.Thread):
                     while len(self._mail_tasks) != 0:
                         task = self._mail_tasks.pop()
                         user_id, mail_title, goods_info = task[0], task[1], task[2]
-                        # if user_id != 'JingleBell200201':
-                        #     continue
 
                         query = session.query(User).filter(User.id == user_id).filter(User.email.isnot(None))
                         user_data = query.first()

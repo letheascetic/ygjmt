@@ -79,7 +79,7 @@ class SWorker(threading.Thread):
             if goods_data is None:
                 logger.info('new subscribe goods info[{0}], insert into db.'.format(goods_info))
                 session.add(CdfBjGoodsInfo.from_item(new_goods_item))
-                # session.add(CdfBjGoodsRecordInfo.parse(goods_id, goods_info))
+                session.add(CdfBjGoodsRecordInfo.from_item(CdfBjGoodsRecordInfo.parse(goods_id, goods_info)))
                 return subscriber_user_id_list
             # 原有的商品，则更新该商品在db中的数据
             else:
@@ -96,8 +96,8 @@ class SWorker(threading.Thread):
             if new_goods_item['goods_status'] == '下架' or new_goods_item['goods_status'] == '不存在':
                 for subscriber_data in query.all():
                     subscriber_data.replenishment_flag = 0
-                # if old_goods_item['goods_status'] != new_goods_item['goods_status']:
-                #     session.add(CdfBjGoodsRecordInfo.parse(goods_id, goods_info))
+                if old_goods_item['goods_status'] != new_goods_item['goods_status']:
+                    session.add(CdfBjGoodsRecordInfo.from_item(CdfBjGoodsRecordInfo.parse(goods_id, goods_info)))
                 return subscriber_user_id_list
 
             record_flag = False
@@ -125,8 +125,8 @@ class SWorker(threading.Thread):
             if subscriber_user_id_list[0] or subscriber_user_id_list[1]:
                 logger.info('goods info change from [{0}] to [{1}], need to mail.'.format(old_goods_item, new_goods_item))
 
-            # if record_flag:
-            #     session.add(CdfBjGoodsRecordInfo.parse(goods_id, goods_info))
+            if record_flag:
+                session.add(CdfBjGoodsRecordInfo.from_item(CdfBjGoodsRecordInfo.parse(goods_id, goods_info)))
 
             session.commit()
             return subscriber_user_id_list

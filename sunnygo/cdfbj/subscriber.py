@@ -170,6 +170,8 @@ class Subscriber(object):
 
         distributed_tasks = [[] for i in range(0, len(self._mailers))]
         for user_id in user_id_list:
+            # if user_id != 'JingleBell200201':
+            #     continue
             if user_id in user_id_both or user_id in user_id_discount:
                 mail_title = discount_mail_title
             else:
@@ -208,7 +210,6 @@ class Subscriber(object):
             query = session.query(User).filter(User.id.in_(user_id_list)).filter(User.email.isnot(None))
             user_all_list = [user for user in query.all()]
             random.shuffle(user_all_list)
-            # user_all_list = user_all_list[0:4]
 
             for user_data in user_all_list:
                 user_data.email_code = user_data.email_code.strip()

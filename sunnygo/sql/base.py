@@ -132,6 +132,16 @@ class CdfBjGoodsRecordInfo(Base):
         return {'goods_id': goods_id, 'goods_status': goods_info['status'], 'goods_num': goods_info['stock'],
                 'goods_price': goods_info['price'], 'goods_discount': goods_info['discount']}
 
+    @staticmethod
+    def from_item(item):
+        return CdfBjGoodsRecordInfo(
+            goods_id=item['goods_id'],
+            goods_status=item['goods_status'],
+            goods_num=item['goods_num'],
+            goods_price=item['goods_price'],
+            goods_discount=item['goods_discount']
+        )
+
 
 class CdfBjSubscriberInfo(Base):
     """table for cdfbj_subscriber_info, 用于表述各产品的订阅信息，包括订阅者id、补货提醒开关、补货提醒阈值、补货提醒状态、折扣提醒开关等"""
