@@ -180,7 +180,8 @@ def load_auto_order_goods_user_info(filename):
 
         user_info_dict[user] = {'email': email, 'email_code': email_code, 'goods': {}}
 
-        arr = [4, 7, 10, 13, 16, 19]
+        arr = [i*3+1 for i in range(1, 21)]
+        # arr = [4, 7, 10, 13, 16, 19]
         url_order_num_list = [(booksheet.cell(row=i, column=j).value, booksheet.cell(row=i, column=j+1).value,
                                booksheet.cell(row=i, column=j+2).value) for j in arr]
         url_order_num_list = [(x, y, z) for (x, y, z) in url_order_num_list if x is not None]

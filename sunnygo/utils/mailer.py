@@ -21,11 +21,11 @@ class Mailer(object):
 
     def send_subscriber_mail(self, user, mail_title, goods_info):
         # 用户有邮箱和授权码，且邮箱状态正常，则使用该邮箱发送
-        if user.email and user.email_code and user.email_status < 20:
+        if user.email and user.email_code and user.email_status < 10:
         # if user.email and user.email_code:
             from_addr, code = user.email, user.email_code.strip()
             to_addrs = [from_addr]
-        elif user.email and user.email_code and user.email_status >= 20 and \
+        elif user.email and user.email_code and user.email_status >= 10 and \
                 (datetime.datetime.now() - user.update_time).total_seconds() > 6 * 3600:
             from_addr, code = user.email, user.email_code.strip()
             to_addrs = [from_addr]
