@@ -60,7 +60,7 @@ class ZmHttp(object):
 
         # 获取满足条件的city
         # city_list = self._sql_helper.query_city_ip_rank(self.vendor, self._config['ip_threshold'])
-        city_list = self._sql_helper.query_city_ip_rank2(self.vendor, 20, self._config['ip_threshold'])
+        city_list = self._sql_helper.query_city_ip_rank2(self.vendor, 30, self._config['ip_threshold'])
 
         if city_list:
             city_code = self._get_city_code(random.choice(city_list))

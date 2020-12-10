@@ -64,7 +64,7 @@ class SqlIpManager(object):
             self._session.rollback()
             return False
 
-    def query_ip_activated(self, vendor, time_remaining=0, failed_threshold=20, success_rate=0.85):
+    def query_ip_activated(self, vendor, time_remaining=0, failed_threshold=30, success_rate=0.85):
         try:
             expire_time = datetime.datetime.now() + datetime.timedelta(seconds=time_remaining)
             query = self._session.query(func.count('1')).filter(IpPool.vendor == vendor)\
@@ -113,16 +113,16 @@ class SqlIpManager(object):
             logger.exception('[{0}] query city ip rank exception[{1}].'.format(vendor, e))
             self._session.rollback()
 
-    def query_city_ip_rank2(self, vendor, failed_threshold=20, ip_threshold=0.95):
+    def query_city_ip_rank2(self, vendor, failed_threshold=30, ip_threshold=0.95):
         city_ip_rank_dict = {}
         try:
-            sql = "select city, count(1) from ip_pool where vendor = '{0}' and failed_num > {1} group by city"
+            sql = "select city, count(1) from ip_pool where vendor = '{0}' and failed_num > {1} and (success_num / (success_num + failed_num) < 0.85) group by city"
             sql = sql.format(vendor, failed_threshold)
             cursor = self._session.execute(sql)
             for city_info in cursor.fetchall():
                 city_ip_rank_dict[city_info[0]] = {'failed': city_info[1], 'success': 0}
 
-            sql = "select city, count(1) from ip_pool where vendor = '{0}' and failed_num <= {1} group by city"
+            sql = "select city, count(1) from ip_pool where vendor = '{0}' and failed_num <= {1} or (success_num / (success_num + failed_num) >= 0.85) group by city"
             sql = sql.format(vendor, failed_threshold)
             cursor = self._session.execute(sql)
             for city_info in cursor.fetchall():

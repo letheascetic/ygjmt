@@ -144,12 +144,14 @@ class IpManager(object):
             ip_statistics = {}
             create_time = self._next_report_time - datetime.timedelta(days=1)
             query = session.query(IpPool.vendor, func.count('1')).filter(IpPool.create_time > create_time)\
-                .filter(IpPool.failed_num <= 20).group_by(IpPool.vendor)
+                .filter(or_(IpPool.failed_num <= 30, IpPool.success_num / (IpPool.success_num + IpPool.failed_num) >= 0.85))\
+                .group_by(IpPool.vendor)
             for vendor, num in query.all():
                 ip_statistics[vendor] = {'good_ip': num, 'bad_ip': 0, 'total_ip': num}
 
             query = session.query(IpPool.vendor, func.count('1')).filter(IpPool.create_time > create_time)\
-                .filter(IpPool.failed_num > 20).group_by(IpPool.vendor)
+                .filter(IpPool.failed_num > 30).\
+                filter(IpPool.success_num / (IpPool.success_num + IpPool.failed_num) < 0.85).group_by(IpPool.vendor)
             for vendor, num in query.all():
                 ip_statistics[vendor].update({'bad_ip': num})
                 ip_statistics[vendor]['total_ip'] = ip_statistics[vendor]['good_ip'] + ip_statistics[vendor]['bad_ip']
