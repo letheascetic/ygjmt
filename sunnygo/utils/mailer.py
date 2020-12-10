@@ -41,7 +41,7 @@ class Mailer(object):
             to_addrs = [user.email]
         # 用户邮箱和授权码都没有，则不发送
         else:
-            logger.info('user[{0}] has no email, no need to send mail.')
+            logger.info('user[{0}] has no email, no need to send mail.'.format(user))
             return {'code': 0, 'msg': 'no email', 'mailer': None}
 
         content = {'商品': goods_info['title'], '状态': goods_info['status'], '库存': goods_info['stock'],

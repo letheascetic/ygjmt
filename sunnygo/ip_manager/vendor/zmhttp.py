@@ -46,17 +46,14 @@ class ZmHttp(object):
             return
 
         # 查询当前正在使用的ip数，计算需要添加的ip数
-        ip_activated = self._sql_helper.query_ip_activated(self.vendor, 60)
+        ip_activated = self._sql_helper.query_ip_activated(self.vendor, 30)
 
         # 如果不是刚启动且当前可用的IP数量>=需要的IP数量，则直接返回
         if self.update_time is not None and ip_activated and ip_activated >= self._config['ip_num']:
             # self.update_time = time.time()
             return
 
-        if self.update_time is None:
-            ip_num = self._config['ip_num']
-        else:
-            ip_num = self._config['ip_num'] - ip_activated
+        ip_num = self._config['ip_num'] - ip_activated
 
         # 寻找符合条件的package
         package = self._get_selected_package(ip_num)

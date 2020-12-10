@@ -4,6 +4,7 @@
 from sql.base import *
 from db import session_cls
 from sqlalchemy import func
+from sqlalchemy import or_, and_
 
 
 logger = logging.getLogger(__name__)
@@ -63,11 +64,12 @@ class SqlIpManager(object):
             self._session.rollback()
             return False
 
-    def query_ip_activated(self, vendor, time_remaining=0, failed_threshold=20):
+    def query_ip_activated(self, vendor, time_remaining=0, failed_threshold=20, success_rate=0.85):
         try:
             expire_time = datetime.datetime.now() + datetime.timedelta(seconds=time_remaining)
             query = self._session.query(func.count('1')).filter(IpPool.vendor == vendor)\
-                .filter(IpPool.expire_time >= expire_time).filter(IpPool.failed_num <= failed_threshold)
+                .filter(IpPool.expire_time >= expire_time)\
+                .filter(or_(IpPool.failed_num <= failed_threshold, IpPool.success_num / (IpPool.failed_num + IpPool.success_num) >= success_rate))
             num = query.one()[0]
             logger.info('query ip activated[{0}|{1}] success[{2}].'.format(vendor, time_remaining, num))
             return num

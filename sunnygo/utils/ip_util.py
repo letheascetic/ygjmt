@@ -29,7 +29,7 @@ class IpUtil(object):
             return None
 
         # 每隔指定的时间，更新本地ip，并将Ip Proxy的访问成功次数和失败次数同步到db
-        if self._update_time is None or (time.time() - self._update_time) > 60:
+        if self._update_time is None or (time.time() - self._update_time) > 30:
             ip_id_list = [ip['id'] for ip in IpUtil._ip_items]
             session = self._sql_helper.create_session()
             try:
@@ -40,7 +40,7 @@ class IpUtil(object):
                     ip_data.failed_num = ip_data.failed_num + IpUtil._ip_items[ip_index]['failed_num']
 
                 session.commit()
-                IpUtil._ip_items = self._sql_helper.get_ip_activated(session, time_remaining=60)
+                IpUtil._ip_items = self._sql_helper.get_ip_activated(session, time_remaining=30)
             except Exception as e:
                 logger.exception('get proxy exception[{0}].'.format(e))
                 session.rollback()
