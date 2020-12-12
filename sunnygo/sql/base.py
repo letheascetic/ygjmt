@@ -150,7 +150,7 @@ class CdfBjSubscriberInfo(Base):
     id = Column('id', BIGINT, primary_key=True, autoincrement=True, nullable=False)     # 主id
     goods_id = Column('goods_id', VARCHAR(64), index=True, nullable=False)              # 订阅的商品
     user_id = Column('user_id', VARCHAR(64), index=True, nullable=False)                # 订阅该商品的用户id
-    # login_name = Column('login_name', VARCHAR(64), nullable=True, default=None)         # 订阅该商品的用户使用的北京cdf账号
+    # login_name = Column('login_name', VARCHAR(64), nullable=True, default=None)       # 订阅该商品的用户使用的北京cdf账号
     replenishment_switch = Column('replenishment_switch', INTEGER, default=1)           # 补货提醒开关[0:不提醒]
     replenishment_threshold = Column('replenishment_threshold', INTEGER, default=50)    # 补货提醒阈值[默认50]
     replenishment_flag = Column('replenishment_flag', INTEGER, default=0)               # 商品数量①下降到阈值以下或②超过阈值且还没提醒，这两者情况下置0[0表示需要提醒，1表示已经提醒]
@@ -189,6 +189,38 @@ class CdfBjSubscriberInfo(Base):
             replenishment_flag=item.get('replenishment_flag', 1),
             discount_switch=item.get('discount_switch', 1)
         )
+
+
+class CdfBjAuOrderInfo(Base):
+    """
+        table for cdfbj_autoorder_info, 用于存储各用户对各产品的自助下单信息，一行表示某用户对某个产品的自助下单信息
+        一行的信息包括：用户id、产品id、方式0的单次数量和单数、方式1的单次数量和单数、已完成的单数、锁单方式（普通锁单或折扣锁单）、锁单开关
+        锁单方式：
+            0）普通锁单：只要库存满足要求就锁单
+            1）折扣锁单：库存满足要求的同时，有折扣才锁单，没折扣不锁单
+        激活时间：
+            [{'start': '20:00:00', 'end': '01:00:00'},
+            'start': '09:00:00', 'end': '11:00:00'},]
+    """
+    __tablename__ = 'cdfbj_autoorder_info'
+
+    id = Column('id', BIGINT, primary_key=True, autoincrement=True, nullable=False)     # 主id
+    goods_id = Column('goods_id', VARCHAR(64), index=True, nullable=False)              # 订阅的商品
+    user_id = Column('user_id', VARCHAR(64), index=True, nullable=False)                # 订阅该商品的用户id
+    goods_per_order0 = Column('goods_per_order0', INTEGER, nullable=True, default=1)    # 方式0每次锁单的件数
+    order0_num = Column('order0_num', INTEGER, nullable=True, default=0)                # 方式0总共锁单的次数
+    order0_completed = Column('order0_completed', INTEGER, nullable=True, default=0)    # 方式0已经完成的次数
+    goods_per_order1 = Column('goods_per_order1', INTEGER, nullable=True, default=1)    # 方式1每次锁单的件数
+    order1_num = Column('order1_num', INTEGER, nullable=True, default=0)                # 方式1总共锁单的次数
+    order1_completed = Column('order1_completed', INTEGER, nullable=True, default=0)    # 方式1已经完成的次数
+    activated_time = Column('activated_time', VARCHAR(2048), nullable=True, default=None)   # 激活的时间，可以是多个时间段，是Json字符串，默认None，表示一直跑程序
+    order_switch = Column('order_switch', INTEGER, nullable=False, default=1)           # 锁单开关，0=关，1=开，默认开
+    update_time = Column('update_time', TIMESTAMP, nullable=False, onupdate=datetime.datetime.now, default=datetime.datetime.now)
+
+    def __repr__(self):
+        return '<CdfBj AutoOrder Info [goods_id:{0}][user_id:{1}][{2}:{3}:{4}][{5}][{6}]>'\
+            .format(self.goods_id, self.user_id, self.goods_per_order0, self.order0_num,
+                    self.order0_completed, self.activated_time, self.order_switch)
 
 
 class CdfBjUserInfo(Base):

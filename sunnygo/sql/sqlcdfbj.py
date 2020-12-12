@@ -31,6 +31,18 @@ class SqlCdfBj(object):
             session = None
 
     @staticmethod
+    def cancel_all_subscribe_switch(session):
+        update_sql = "update cdfbj_subscriber_info set replenishment_switch = 0, discount_switch = 0;"
+        try:
+            session.execute(update_sql)
+            session.commit()
+            return True
+        except Exception as e:
+            logger.exception('sql[{0}] cancel all subscribe_switch exception[{1}].'.format(update_sql, e))
+            session.rollback()
+            return False
+
+    @staticmethod
     def insert_update_user(session, item):
         try:
             query = session.query(User).filter(User.id == item['user_id'])

@@ -34,6 +34,8 @@ class Subscriber(object):
         # 开启会话
         session = self._sql_helper.create_session()
 
+        self._sql_helper.cancel_all_subscribe_switch(session)
+
         for user_id in sys_user_dict.keys():
             # 更新db中的user表[用户存在则更新，不存在则插入新用户]
             self._sql_helper.insert_update_user(session, sys_user_dict[user_id])
@@ -233,8 +235,10 @@ class Subscriber(object):
             logger.exception('goods[{0}] mail subscribers[{1}] exception[{2}].'.format(
                 goods_info, subscriber_user_id_list, e))
 
-    def execute(self):
-        # self.init_sync_db()
+    def execute(self, argv):
+        if 'init' in argv:
+            self.init_sync_db()
+            return
 
         distributed_user_id_list = self.__distribute_mail_tasks()
         for i in range(0, len(distributed_user_id_list)):

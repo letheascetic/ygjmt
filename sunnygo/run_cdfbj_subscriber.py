@@ -1,6 +1,6 @@
 # coding: utf-8
 
-
+import sys
 from utils import util
 from cdfbj.subscriber import Subscriber
 
@@ -10,5 +10,5 @@ if __name__ == '__main__':
 
     import config
     reminder = Subscriber(config.CDFBJ_SUBSCRIBER_CONFIG)
-    reminder.execute()
+    reminder.execute(sys.argv)
     pass
