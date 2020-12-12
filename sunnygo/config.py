@@ -63,4 +63,10 @@ CDFBJ_SUBSCRIBER_CONFIG = {
     'SYS_MAILER': {"email": '3219276656@qq.com', 'code': 'gcagfrrfnbhndejj'},
 }
 
+CDFBJ_AUTO_ORDER_CONFIG = {
+    'DB_CONFIG': MYSQL_CONFIG_TESTING,                  # 使用的数据库
+    'AUTO_ORDER_USER_FILE': '北京日上锁单用户信息',      # 锁单用户的信息
+    'AUTO_ORDER_GOODS_FILE': '北京日上锁单产品信息',     # 锁单产品的信息
+}
+
 

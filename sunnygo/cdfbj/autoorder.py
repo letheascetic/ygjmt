@@ -30,7 +30,7 @@ class AutoOrder(object):
     def init_sync_db(self):
         """初始化自助下单的数据库"""
 
-        
+
         pass
 
     def execute(self, argv):
