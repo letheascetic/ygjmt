@@ -199,8 +199,8 @@ class Worker(threading.Thread):
 
         # 获取产品详情
         goods_info = self._http_util.cdfbj_get_goods_info(goods_id, host, port)
-        if goods_info is not None:
-            logger.info('cdfbj get goods info with ip proxy[{0}:{1}] response[{2}].'.format(host, port, goods_info))
+        # if goods_info is not None:
+        #     logger.info('cdfbj get goods info with ip proxy[{0}:{1}] response[{2}].'.format(host, port, goods_info))
 
         # 如果使用IP代理，则记录访问结果
         if self._config.get('use_proxy', True):

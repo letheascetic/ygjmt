@@ -10,9 +10,9 @@ import threading
 
 logger = logging.getLogger(__name__)
 
-jvm_path = jpype.getDefaultJVMPath()
-jar_path = 'demo12345.jar'
-jpype.startJVM(jvm_path, "-Djava.class.path={0}".format(jar_path))
+# jvm_path = jpype.getDefaultJVMPath()
+# jar_path = 'demo12345.jar'
+# jpype.startJVM(jvm_path, "-Djava.class.path={0}".format(jar_path))
 
 
 class HttpUtil(object):

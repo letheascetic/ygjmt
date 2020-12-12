@@ -25,7 +25,7 @@ class IpUtil(object):
 
     def get_proxy(self):
         # 不使能ip proxy，直接返回
-        if not self._config.get('PROXY_ENABLE', True):
+        if not self._config.get('use_proxy', True):
             return None
 
         # 每隔指定的时间，更新本地ip，并将Ip Proxy的访问成功次数和失败次数同步到db
