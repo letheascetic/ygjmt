@@ -5,14 +5,8 @@ import json
 import time
 import reader
 import random
-import smtplib
 import logging
-import datetime
-import requests
 import auto_order
-from email.header import Header
-from email.utils import formataddr
-from email.mime.text import MIMEText
 from auto_order_remind_worker import Worker
 
 
