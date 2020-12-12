@@ -1,9 +1,6 @@
 # coding: utf-8
 
-import uuid
 import time
-import json
-import config
 import random
 import smtplib
 import logging
@@ -14,85 +11,34 @@ from email.header import Header
 from email.utils import formataddr
 from email.mime.text import MIMEText
 
+from utils.ip_util import IpUtil
+from sql.sqlcdfbj import SqlCdfBj
+from utils.http_util import HttpUtil
+
 
 logger = logging.getLogger(__name__)
 
 
 class Worker(threading.Thread):
 
-    def __init__(self, id, message_queue, goods_user_info, user_info_dict, user_status_dict, ip_pool, goods_ids, http_util):
+    def __init__(self, id, config, message_queue, goods_user_info, user_info_dict, user_status_dict, goods_ids):
         threading.Thread.__init__(self)
         self.id = id
         self.m_running = True
+        self._config = config
+        self.message_queue = message_queue
         self.goods_user_info = goods_user_info
         self.user_info_dict = user_info_dict
         self.user_status_dict = user_status_dict
-        self.message_queue = message_queue
-        self.ip_pool = ip_pool
         self.goods_ids = goods_ids
-        self.request_statistics = {'total': 0, 'success': 0, 'failed': 0, 'exception': 0, 'total_time_span': 0, 'success_time_span': 0, 'total_avg_time': 0, 'success_avg_time': 0}
-        self.http_util = http_util
 
-    def get_proxy(self, ip_info):
-        host = ip_info.get('ip', None)
-        port = ip_info.get('port', None)
-        if host is None or port is None:
-            return None, None
-        return host, port
+        self._ip_util = IpUtil(config)
+        self._sql_helper = SqlCdfBj()
+        self._http_util = HttpUtil(config)
+        self._update_time = time.time()
 
-    def get_goods_info_with_http_util(self, goods_id, host, port):
-        goods_info = {'title': None, 'url': None, 'status': None, 'stock': None, 'price': None, 'discount': None}
-        if not host:
-            host = ''
-            port = 8888
-
-        start = time.time()
-        try:
-            url = "https://mbff.yuegowu.com/goods/unLogin/spu/{0}?regId={1}".format(goods_id, uuid.uuid4())
-            goods_info['url'] = 'https://m.yuegowu.com/goods-detail/{0}'.format(goods_id)
-
-            response = self.http_util.getGoodsInfo(url, host, port)
-            try:
-                content = json.loads(str(response))
-                context = content['context']
-                if context is None:
-                    goods_info['status'] = '下架'
-                    goods_info['stock'] = 0
-                else:
-                    info = context['goodsInfos'][0]
-                    goods_info['stock'] = info['stock']
-                    goods_info['title'] = info['goodsInfoName']
-                    if goods_info['stock'] > 0:
-                        goods_info['status'] = '在售'
-                    else:
-                        goods_info['status'] = '缺货'
-
-                    goods_info['price'] = info['salePrice']
-                    if len(info['marketingLabels']) > 0:
-                        goods_info['discount'] = info['marketingLabels'][0]['marketingDesc']
-
-                self.request_statistics['success'] = self.request_statistics['success'] + 1
-                time_span = time.time() - start
-                self.request_statistics['success_time_span'] = self.request_statistics['success_time_span'] + time_span
-                self.request_statistics['success_avg_time'] = self.request_statistics['success_time_span'] / self.request_statistics['success']
-            except:
-                # logger.info('thread[{0}] request url[{1}] using proxy[{2}:{3}] failed with return code: [{4}].'.format(self.id, goods_id, host, port, e))
-                # ip_info['failed_times'] = ip_info['failed_times'] + 1
-
-                # self.request_statistics['failed'] = self.request_statistics['failed'] + 1
-                time_span = time.time() - start
-
-        except Exception as e:
-            logger.info('thread[{0}] get goods info[{1}] using proxy[{2}:{3}] exception[{4}].'.format(self.id, goods_id, host, port, e))
-
-            self.request_statistics['exception'] = self.request_statistics['exception'] + 1
-            time_span = time.time() - start
-
-        self.request_statistics['total'] = self.request_statistics['total'] + 1
-        self.request_statistics['total_time_span'] = self.request_statistics['total_time_span'] + time_span
-        self.request_statistics['total_avg_time'] = self.request_statistics['total_time_span'] / self.request_statistics['total']
-
-        return goods_info
+    def stop(self):
+        self.m_running = False
 
     def query_user_status(self, goods_id, goods_info):
         stock = goods_info['stock']
@@ -114,7 +60,7 @@ class Worker(threading.Thread):
             from_addr, code = user_email, self.user_info_dict[user]['email_code']
             to_addrs = [user_email]
         else:
-            sender = random.choice(config.AUTO_ORDER_REMINDER_CONFIG['mail_senders'])
+            sender = random.choice(self._config['mail_senders'])
             from_addr, code = sender['email'], sender['code']
             to_addrs = [from_addr]
 
@@ -161,7 +107,6 @@ class Worker(threading.Thread):
 
     def run(self):
         i = 0
-        last_time = time.time()
         while self.m_running:
             i = i + 1
             current_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
@@ -170,17 +115,8 @@ class Worker(threading.Thread):
             random.shuffle(self.goods_ids)
             for goods_id in self.goods_ids:
                 try:
-                    # time.sleep(config.AUTO_ORDER_REMINDER_CONFIG['interval'])
-                    time.sleep(random.random() * config.AUTO_ORDER_REMINDER_CONFIG['interval'] * 2)
-                    while len(self.ip_pool) == 0:
-                        logger.info('ip pool is empty, waiting.')
-                        time.sleep(3)
-
-                    ip_info = random.choice(self.ip_pool)
-                    host, port = self.get_proxy(ip_info)
-
-                    goods_info = self.get_goods_info_with_http_util(goods_id, host, port)
-                    if goods_info['status'] is None:  # 访问失败或出错，直接返回
+                    goods_info = self.__get_goods_info(goods_id)
+                    if goods_info is None:
                         continue
 
                     # logger.info('goods info: [{0}].'.format(goods_info))
@@ -190,12 +126,12 @@ class Worker(threading.Thread):
 
                     logger.info('goods on sale: [{0}].'.format(goods_info))
 
-                    if config.AUTO_ORDER_REMINDER_CONFIG['auto_order_use_proxy'] is False:
-                        host, port = None, 8888
+                    # if self._config['auto_order_use_proxy'] is False:
+                    host, port = None, 8888
 
                     mail_users = self.query_user_status(goods_id, goods_info)
 
-                    if goods_id in config.AUTO_ORDER_REMINDER_CONFIG['monitor_goods_ids']:
+                    if goods_id in self._config['monitor_goods_ids']:
                         if goods_info['discount'] is None:  # 针对这些产品，折扣没有的情况下，不锁单
                             logger.info('goods[{0}] no discount[{1}], no need to auto order for these users[{2}].'.format(goods_id, goods_info, mail_users))
                             mail_users = []
@@ -214,7 +150,7 @@ class Worker(threading.Thread):
                     # 有要锁单的用户，则开启锁单
                     while len(mail_users) != 0:
                         user = None
-                        for super_user in config.AUTO_ORDER_REMINDER_CONFIG['super_users']:
+                        for super_user in self._config['super_users']:
                             if super_user in mail_users:
                                 user = super_user
                                 break
@@ -230,27 +166,8 @@ class Worker(threading.Thread):
                                 self.send_mail(goods_info, user, self_sender=False)
                             self.message_queue.add('user_status_dict')
 
-                        # thread_list = []
-                        # for user in mail_users:
-                        #     thread_x = threading.Thread(target=self.lock_order, args=(user, goods_id, host, port, goods_info))
-                        #     thread_list.append(thread_x)
-                        #
-                        # for thread_x in thread_list:
-                        #     thread_x.setDaemon(True)
-                        #     thread_x.start()
-                        #
-                        # for thread_x in thread_list:
-                        #     thread_x.join()
-                        #
-                        # while len(self.ip_pool) == 0:
-                        #     logger.info('ip pool is empty, waiting.')
-                        #     time.sleep(3)
-
-                        ip_info = random.choice(self.ip_pool)
-                        host, port = self.get_proxy(ip_info)
-
-                        goods_info = self.get_goods_info_with_http_util(goods_id, host, port)
-                        if goods_info['status'] is None:  # 访问失败或出错，直接返回
+                        goods_info = self.__get_goods_info(goods_id)
+                        if goods_info is None:  # 访问失败或出错，直接返回
                             break
 
                         if goods_info['status'] == '在售':
@@ -261,9 +178,32 @@ class Worker(threading.Thread):
                 except Exception as e:
                     logger.exception('process goods[{0}] exception: [{1}].'.format(goods_id, e))
 
-            if time.time() - last_time > 600:
-                last_time = time.time()
-                logger.info('thread[{0}] request statistics: [{1}].'.format(self.id, self.request_statistics))
+            if (time.time() - self._update_time) > 600:
+                self._update_time = time.time()
+                self._http_util.log()
 
-    def stop(self):
-        self.m_running = False
+    def __get_goods_info(self, goods_id):
+        """获取产品详情"""
+
+        ip_item = None
+
+        # 确认是否使用IP代理，若使用则获取一个IP Proxy
+        if self._config.get('use_proxy', True):
+            ip_item = self._ip_util.get_proxy()
+            if not ip_item:
+                time.sleep(5)
+                return None
+            host, port = ip_item['ip'], ip_item['port']
+        else:
+            host, port = '', -1
+
+        # 获取产品详情
+        goods_info = self._http_util.cdfbj_get_goods_info(goods_id, host, port)
+        if goods_info is not None:
+            logger.info('cdfbj get goods info with ip proxy[{0}:{1}] response[{2}].'.format(host, port, goods_info))
+
+        # 如果使用IP代理，则记录访问结果
+        if self._config.get('use_proxy', True):
+            self._ip_util.feedback(ip_item, goods_info)
+
+        return goods_info

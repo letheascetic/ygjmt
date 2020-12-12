@@ -11,6 +11,12 @@ LOG_CONFIG = {
     'LOG_FORMAT': logging.Formatter('[%(levelname)s][%(asctime)s][%(module)s][%(funcName)s][%(process)d][%(thread)d][%(message)s]')
 }
 
+# 数据库配置项
+MYSQL_CONFIG_TESTING = {
+    'DB_CONNECT_TYPE': 'sqlalchemy',
+    'DB_CONNECT_STRING': 'mysql+pymysql://ascetic:ascetic@127.0.0.1:3306/ygjmt_db?charset=utf8mb4'
+}
+
 
 ON_SALE_REMINDER_CONFIG = {
     'interval': 0.4,
@@ -37,9 +43,7 @@ ON_SALE_REMINDER_CONFIG = {
 AUTO_ORDER_REMINDER_CONFIG = {
     'interval': 0.1,
     'worker_num': 1,
-    'ip_pool_num': 3,
     'use_proxy': True,
-    'auto_order_use_proxy': False,
     'goods_user_file': '北京日上锁单商品信息.xlsx',
     'user_info_file': '北京日上锁单用户信息.xlsx',
     'user_status_file': 'lock_user_status.txt',
@@ -68,5 +72,6 @@ AUTO_ORDER_REMINDER_CONFIG = {
         '2c91c7f4756ef3620175816047d351ff',
         '2c91c7f1739b651d0173a03b92450b77', 
         '2c9194597219d0ad017219dc91c804d5',        
-    ]
+    ],
+    'DB_CONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
 }
