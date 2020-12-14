@@ -63,6 +63,7 @@ class SqlCdfBj(object):
             if seeker is not None:
                 seeker.ip = seeker_info['ip']
                 seeker.register_time = seeker_info['register_time']
+                seeker.tag = seeker_info['tag']
             else:
                 seeker = Seeker(id=seeker_info['id'], ip=seeker_info['ip'],
                                 register_time=seeker_info['register_time'], tag=seeker_info['tag'])

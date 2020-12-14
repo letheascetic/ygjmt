@@ -27,7 +27,7 @@ class AutoOrderReminder(object):
         self.name = 'cdfbj_auto_order'
         self.config = config
         self.message_queue = set()
-        self._update_time = time.time()
+        self._update_time = None
         self._tag = json.dumps({'WORKER_NUM': self.config.get('worker_num', 1)})
         self._sql_helper = SqlCdfBj()
         pass
@@ -158,17 +158,17 @@ class AutoOrderReminder(object):
                 logger.exception('on sale reminder exception: [{0}].'.format(e))
 
     def __heart_beats(self):
-        if time.time() - self._update_time > 10:
+        if self._update_time is None or time.time() - self._update_time > 10:
             session = self._sql_helper.create_session()
             try:
                 seeker_info = {'id': self.name, 'tag': self._tag, 'ip': None, 'register_time': datetime.datetime.now()}
-                self._sql_helper.update_seeker(seeker_info)
+                self._sql_helper.update_seeker(session, seeker_info)
             except Exception as e:
                 logger.exception('heart beats exception[{0}].'.format(e))
                 session.rollback()
             finally:
                 self._sql_helper.close_session(session)
-        self._update_time = time.time()
+            self._update_time = time.time()
 
     def init_lock_user_info(self, user):
         logger.info('init lock user info: [{0}].'.format(user))

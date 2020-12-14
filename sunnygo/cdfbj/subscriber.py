@@ -26,7 +26,7 @@ class Subscriber(object):
         self._workers = []
         self._mailers = []
         self._mailer = Mailer(config)
-        self._update_time = time.time()
+        self._update_time = None
         self._tag = json.dumps({'WORKER_NUM': self._config.get('WORKER_NUM', 1)})
 
     def init_sync_db(self):
@@ -41,6 +41,7 @@ class Subscriber(object):
         self._sql_helper.cancel_all_subscribe_switch(session)
 
         for user_id in sys_user_dict.keys():
+            logger.info('init sync db for user[{0}].'.format(user_id))
             # 更新db中的user表[用户存在则更新，不存在则插入新用户]
             self._sql_helper.insert_update_user(session, sys_user_dict[user_id])
 
@@ -154,17 +155,17 @@ class Subscriber(object):
             self.__heart_beats()
 
     def __heart_beats(self):
-        if time.time() - self._update_time > 10:
+        if self._update_time is None or (time.time() - self._update_time) > 10:
             session = self._sql_helper.create_session()
             try:
                 seeker_info = {'id': self.name, 'tag': self._tag, 'ip': None, 'register_time': datetime.datetime.now()}
-                self._sql_helper.update_seeker(seeker_info)
+                self._sql_helper.update_seeker(session, seeker_info)
             except Exception as e:
                 logger.exception('heart beats exception[{0}].'.format(e))
                 session.rollback()
             finally:
                 self._sql_helper.close_session(session)
-        self._update_time = time.time()
+            self._update_time = time.time()
 
     def __find_matching_mailer(self, user_id):
         for mailer in self._mailers:
@@ -257,6 +258,8 @@ class Subscriber(object):
         if 'init' in argv:
             self.init_sync_db()
             return
+
+        self.__heart_beats()
 
         distributed_user_id_list = self.__distribute_mail_tasks()
         for i in range(0, len(distributed_user_id_list)):

@@ -63,6 +63,7 @@ class SqlCdfBj(object):
             if seeker is not None:
                 seeker.ip = seeker_info['ip']
                 seeker.register_time = seeker_info['register_time']
+                seeker.tag = seeker_info['tag']
             else:
                 seeker = Seeker(id=seeker_info['id'], ip=seeker_info['ip'],
                                 register_time=seeker_info['register_time'], tag=seeker_info['tag'])
@@ -81,10 +82,10 @@ class SqlCdfBj(object):
             query = session.query(User).filter(User.id == item['user_id'])
             user = query.first()
             if user is not None:
-                logger.info('user[{0}] already exists, just update[{1}].'.format(user, item))
+                # logger.info('user[{0}] already exists, just update[{1}].'.format(user, item))
                 user.update(item)
             else:
-                logger.info('insert new user[{0}].'.format(item))
+                # logger.info('insert new user[{0}].'.format(item))
                 user = User.from_item(item)
                 session.add(user)
             session.commit()
@@ -101,10 +102,10 @@ class SqlCdfBj(object):
                 .filter(CdfBjSubscriberInfo.goods_id == item['goods_id'])
             info = query.first()
             if info is not None:
-                logger.info('cdfbj subscriber info[{0}] already exists, just update[{1}].'.format(info, item))
+                # logger.info('cdfbj subscriber info[{0}] already exists, just update[{1}].'.format(info, item))
                 info.update(item)
             else:
-                logger.info('insert new cdfbj subscriber info[{0}].'.format(item))
+                # logger.info('insert new cdfbj subscriber info[{0}].'.format(item))
                 info = CdfBjSubscriberInfo.from_item(item)
                 session.add(info)
             session.commit()

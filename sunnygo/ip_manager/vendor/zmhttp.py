@@ -161,18 +161,26 @@ class ZmHttp(object):
         url = 'http://http.tiqu.alicdns.com/getip3?num={0}&type=2&pro=&city={1}&yys=0&port=11&pack={2}&ts=1&ys=0&cs=1&lb=1&sb=0&pb=4&mr=2&regions='
         url = url.format(ip_num, city_code, package)
         try:
-            r = requests.get(url, timeout=10)
-            if r.status_code == requests.codes.ok:
-                content = json.loads(r.text)
-                logger.info('[{0}] get ip available[{1}|{2}] response[{3}].'.format(self.vendor, package, ip_num, content))
-                if content.get('code', None) == 0:
-                    ip_items = []
-                    for ip_info in content['data']:
-                        ip_item = {'ip': ip_info['ip'], 'port': ip_info['port'], 'city': ip_info['city'],
-                                   'vendor': self.vendor, 'expire_time': ip_info['expire_time'],
-                                   'create_time': datetime.datetime.now()}
-                        ip_items.append(ip_item)
-                    return ip_items
+            i = 0
+            while i < 2:
+                i = i + 1
+                r = requests.get(url, timeout=10)
+                if r.status_code == requests.codes.ok:
+                    content = json.loads(r.text)
+                    logger.info('[{0}] get ip available[{1}|{2}] response[{3}].'.format(self.vendor, package, ip_num, content))
+                    if content.get('code', None) == 0:
+                        ip_items = []
+                        for ip_info in content['data']:
+                            ip_item = {'ip': ip_info['ip'], 'port': ip_info['port'], 'city': ip_info['city'],
+                                       'vendor': self.vendor, 'expire_time': ip_info['expire_time'],
+                                       'create_time': datetime.datetime.now()}
+                            ip_items.append(ip_item)
+                        return ip_items
+                    elif content.get('code', None) == 115:
+                        time.sleep(5)
+                        continue
+                    else:
+                        break
             logger.info('[{0}] get ip available[{1}|{2}] failed[{3}].'.format(self.vendor, package, ip_num, r.text))
         except Exception as e:
             logger.exception('[{0}] get ip available[{1}|{2}] exception[{3}].'.format(self.vendor, package, ip_num, e))

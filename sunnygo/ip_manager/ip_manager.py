@@ -2,6 +2,7 @@
 
 
 import time
+import json
 import logging
 import datetime
 import requests
@@ -135,13 +136,16 @@ class IpManager(object):
         seekers = ['cdfbj_subscriber', 'cdfbj_auto_order']
         for seeker_id in seekers:
             seeker_info = self.sql_helper.query_seeker(seeker_id)
-            if seeker_info and (datetime.datetime.now() - seeker_info['register_time']).total_seconds() <= 300:
-                if seeker_info['tag']:
-                    total_ip = total_ip + int(seeker_info['tag'])
+            if seeker_info and seeker_info['tag'] and (datetime.datetime.now() - seeker_info['register_time']).total_seconds() <= 300:
+                worker_num = json.loads(seeker_info['tag']).get('WORKER_NUM', None)
+                if worker_num:
+                    total_ip = total_ip + worker_num
+        if total_ip != 0:
+            total_ip = total_ip + 2
         logger.info('[{0}] total ip are needed.'.format(total_ip))
 
         initialized_vendors = [vendor for vendor in self.vendors if vendor.vendor_initialized]
-        ips = [total_ip/len(initialized_vendors) for i in range(len(initialized_vendors))]
+        ips = [int(total_ip/len(initialized_vendors)) for i in range(len(initialized_vendors))]
         ips[-1] = ips[-1] + total_ip - sum(ips)
         for i in range(len(initialized_vendors)):
             initialized_vendors[i].check_activated_ips(ips[i])
