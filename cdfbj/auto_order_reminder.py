@@ -6,7 +6,9 @@ import time
 import reader
 import random
 import logging
+import datetime
 import auto_order
+from sql.sqlcdfbj import SqlCdfBj
 from auto_order_remind_worker import Worker
 
 
@@ -22,8 +24,12 @@ class AutoOrderReminder(object):
     workers = []
 
     def __init__(self, config):
+        self.name = 'cdfbj_auto_order'
         self.config = config
         self.message_queue = set()
+        self._update_time = time.time()
+        self._tag = json.dumps({'WORKER_NUM': self.config.get('worker_num', 1)})
+        self._sql_helper = SqlCdfBj()
         pass
 
     def load_goods_user_info(self):
@@ -117,6 +123,8 @@ class AutoOrderReminder(object):
         return goods_ids
 
     def start_to_monitor(self):
+        self.__heart_beats()
+
         users = [user for user in self.user_info_dict.keys() if len(self.user_info_dict[user]['goods']) != 0]
 
         for user_key in users:
@@ -145,8 +153,22 @@ class AutoOrderReminder(object):
                         next_user_index = 0
 
                 time.sleep(10)
+                self.__heart_beats()
             except Exception as e:
                 logger.exception('on sale reminder exception: [{0}].'.format(e))
+
+    def __heart_beats(self):
+        if time.time() - self._update_time > 10:
+            session = self._sql_helper.create_session()
+            try:
+                seeker_info = {'id': self.name, 'tag': self._tag, 'ip': None, 'register_time': datetime.datetime.now()}
+                self._sql_helper.update_seeker(seeker_info)
+            except Exception as e:
+                logger.exception('heart beats exception[{0}].'.format(e))
+                session.rollback()
+            finally:
+                self._sql_helper.close_session(session)
+        self._update_time = time.time()
 
     def init_lock_user_info(self, user):
         logger.info('init lock user info: [{0}].'.format(user))

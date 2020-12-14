@@ -1,8 +1,10 @@
 # coding: utf-8
 
+import json
 import time
 import random
 import logging
+import datetime
 from utils import reader
 from sql.base import User
 from utils.mailer import Mailer
@@ -24,6 +26,8 @@ class Subscriber(object):
         self._workers = []
         self._mailers = []
         self._mailer = Mailer(config)
+        self._update_time = time.time()
+        self._tag = json.dumps({'WORKER_NUM': self._config.get('WORKER_NUM', 1)})
 
     def init_sync_db(self):
         """初始化同步数据库"""
@@ -147,6 +151,20 @@ class Subscriber(object):
                     self.__mail_subscribers2(goods_info, subscriber_user_id_list)
             else:
                 time.sleep(3)
+            self.__heart_beats()
+
+    def __heart_beats(self):
+        if time.time() - self._update_time > 10:
+            session = self._sql_helper.create_session()
+            try:
+                seeker_info = {'id': self.name, 'tag': self._tag, 'ip': None, 'register_time': datetime.datetime.now()}
+                self._sql_helper.update_seeker(seeker_info)
+            except Exception as e:
+                logger.exception('heart beats exception[{0}].'.format(e))
+                session.rollback()
+            finally:
+                self._sql_helper.close_session(session)
+        self._update_time = time.time()
 
     def __find_matching_mailer(self, user_id):
         for mailer in self._mailers:

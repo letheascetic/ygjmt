@@ -24,7 +24,6 @@ class ZmHttp(object):
             {'appkey': 'beefce6b397e3f7eecbc56f692aef9c3', 'package': '124824'},
             {'appkey': '2252f48ef2c1c33117eb6986dd90e6e6', 'package': '110169'}]
         self._package_index = 0
-        self.update_time = None
         self._city_code_dict = reader.load_zmhttp_city_code_dict('zmhttp_city_code_list.xlsx')
 
     def init_vendor(self, ip):
@@ -36,11 +35,8 @@ class ZmHttp(object):
         logger.info('init vendor[{0}] with ip[{1}] result[{2}].'.format(self.vendor, ip, self.vendor_initialized))
         return self.vendor_initialized
 
-    def check_activated_ips(self):
-        if self.update_time is not None and (time.time() - self.update_time) < self._config['interval']:
-            return
-
-        # 为初始化成功，则打印提示
+    def check_activated_ips(self, ip_needed):
+        # 初始化成功，则打印提示
         if not self.vendor_initialized:
             logger.info('vendor[{0}] not initialized.'.format(self.vendor))
             return
@@ -49,11 +45,10 @@ class ZmHttp(object):
         ip_activated = self._sql_helper.query_ip_activated(self.vendor, 30)
 
         # 如果不是刚启动且当前可用的IP数量>=需要的IP数量，则直接返回
-        if self.update_time is not None and ip_activated and ip_activated >= self._config['ip_num']:
-            # self.update_time = time.time()
+        if ip_activated is None or ip_activated >= ip_needed:
             return
 
-        ip_num = self._config['ip_num'] - ip_activated
+        ip_num = ip_needed - ip_activated
 
         # 寻找符合条件的package
         package = self._get_selected_package(ip_num)
@@ -72,12 +67,6 @@ class ZmHttp(object):
         # 添加到ip pool
         if ip_items:
             self._sql_helper.insert_ip_pool(ip_items)
-
-        # 查询当前正在使用的ip数，计算需要添加的ip数
-        ip_activated = self._sql_helper.query_ip_activated(self.vendor, 60)
-
-        if ip_activated >= self._config['ip_num']:
-            self.update_time = time.time()
 
     def _get_selected_package(self, ip_num):
         for package_index in range(self._package_index, len(self._packages)):

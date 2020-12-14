@@ -57,8 +57,8 @@ class Seeker(Base):
     __tablename__ = 'seeker'
 
     id = Column('id', VARCHAR(64), primary_key=True, nullable=False)
-    tag = Column('tag', VARCHAR(64), index=False, nullable=True)
-    ip = Column('ip', VARCHAR(64), index=True, nullable=False)
+    tag = Column('tag', VARCHAR(64), index=False, nullable=True, default=None)
+    ip = Column('ip', VARCHAR(64), index=True, nullable=True, default=None)
     register_time = Column('register_time', TIMESTAMP, default=datetime.datetime.now, index=False)
 
     def to_item(self):

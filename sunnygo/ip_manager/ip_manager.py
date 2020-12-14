@@ -99,8 +99,8 @@ class IpManager(object):
             return
 
         # 日期改变，则清除过时的数据
-        if datetime.datetime.now().day != self.update_time.day:
-            self.sql_helper.delete_stale_data(days=30)
+        # if datetime.datetime.now().day != self.update_time.day:
+        #     self.sql_helper.delete_stale_data(days=30)
 
         self.update_time = datetime.datetime.now()
 
@@ -131,8 +131,20 @@ class IpManager(object):
         self.sql_helper.update_seeker(self.seeker_info)
 
     def __push_ips(self):
-        for vendor in self.vendors:
-            vendor.check_activated_ips()
+        total_ip = 0
+        seekers = ['cdfbj_subscriber', 'cdfbj_auto_order']
+        for seeker_id in seekers:
+            seeker_info = self.sql_helper.query_seeker(seeker_id)
+            if seeker_info and (datetime.datetime.now() - seeker_info['register_time']).total_seconds() <= 300:
+                if seeker_info['tag']:
+                    total_ip = total_ip + int(seeker_info['tag'])
+        logger.info('[{0}] total ip are needed.'.format(total_ip))
+
+        initialized_vendors = [vendor for vendor in self.vendors if vendor.vendor_initialized]
+        ips = [total_ip/len(initialized_vendors) for i in range(len(initialized_vendors))]
+        ips[-1] = ips[-1] + total_ip - sum(ips)
+        for i in range(len(initialized_vendors)):
+            initialized_vendors[i].check_activated_ips(ips[i])
 
     def __report(self):
         if datetime.datetime.now() < self._next_report_time:

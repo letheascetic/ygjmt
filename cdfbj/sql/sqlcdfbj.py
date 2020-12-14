@@ -43,6 +43,39 @@ class SqlCdfBj(object):
             return False
 
     @staticmethod
+    def query_seeker(session, seeker_id):
+        try:
+            query = session.query(Seeker).filter(Seeker.id == seeker_id)
+            seeker = query.first()
+            if seeker is not None:
+                seeker_info = seeker.to_item()
+                logger.info('query seeker[{0}] success[{1}].'.format(seeker_id, seeker_info))
+                return seeker_info
+        except Exception as e:
+            logger.exception('query seeker[{0}] exception[{1}]'.format(seeker_id, e))
+            session.rollback()
+
+    @staticmethod
+    def update_seeker(session, seeker_info):
+        try:
+            query = session.query(Seeker).filter(Seeker.id == seeker_info['id'])
+            seeker = query.first()
+            if seeker is not None:
+                seeker.ip = seeker_info['ip']
+                seeker.register_time = seeker_info['register_time']
+            else:
+                seeker = Seeker(id=seeker_info['id'], ip=seeker_info['ip'],
+                                register_time=seeker_info['register_time'], tag=seeker_info['tag'])
+                session.add(seeker)
+            session.commit()
+            logger.info('update seeker[{0}] success.'.format(seeker_info))
+            return True
+        except Exception as e:
+            logger.exception('update seeker[{0}] exception[{1}].'.format(seeker_info, e))
+            session.rollback()
+            return False
+
+    @staticmethod
     def insert_update_user(session, item):
         try:
             query = session.query(User).filter(User.id == item['user_id'])
