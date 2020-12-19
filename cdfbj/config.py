@@ -41,8 +41,8 @@ ON_SALE_REMINDER_CONFIG = {
 
 
 AUTO_ORDER_REMINDER_CONFIG = {
-    'interval': 0.2,
-    'worker_num': 11,
+    'interval': 0.1,
+    'worker_num': 8,
     'use_proxy': True,
     'goods_user_file': '北京日上锁单商品信息.xlsx',
     'user_info_file': '北京日上锁单用户信息.xlsx',
@@ -71,7 +71,8 @@ AUTO_ORDER_REMINDER_CONFIG = {
         '2c91c7f4756ef3620175816047e15201',
         '2c91c7f4756ef3620175816047d351ff',
         '2c91c7f1739b651d0173a03b92450b77', 
-        '2c9194597219d0ad017219dc91c804d5',        
+        '2c9194597219d0ad017219dc91c804d5', 
+        '2c9194587219d0ae017219dc8b3f0135',        
     ],
     'DB_CONFIG': MYSQL_CONFIG_TESTING,   # 使用的数据库
 }
